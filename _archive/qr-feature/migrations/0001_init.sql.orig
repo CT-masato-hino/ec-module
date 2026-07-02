@@ -1,0 +1,125 @@
+-- QR流入判定付きミニEC 初期スキーマ + 初期データ
+
+CREATE TABLE products (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT,
+  price_display INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'JPY',
+  stripe_price_id TEXT NOT NULL,
+  image_url TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE qr_sources (
+  id TEXT PRIMARY KEY,
+  qr_id TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  campaign_id TEXT,
+  location_name TEXT,
+  memo TEXT,
+  destination_path TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE orders (
+  id TEXT PRIMARY KEY,
+  stripe_session_id TEXT NOT NULL UNIQUE,
+  stripe_event_id TEXT UNIQUE,
+  product_id TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  amount_total INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'JPY',
+  payment_status TEXT NOT NULL,
+  customer_email TEXT,
+  qr_id TEXT NOT NULL,
+  qr_source_name TEXT,
+  source_type TEXT,
+  campaign_id TEXT,
+  ordered_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_orders_qr_id ON orders (qr_id);
+CREATE INDEX idx_orders_ordered_at ON orders (ordered_at);
+CREATE INDEX idx_orders_product_id ON orders (product_id);
+CREATE INDEX idx_orders_payment_status ON orders (payment_status);
+
+CREATE TABLE access_logs (
+  id TEXT PRIMARY KEY,
+  qr_id TEXT NOT NULL,
+  product_id TEXT,
+  path TEXT NOT NULL,
+  user_agent TEXT,
+  ip_hash TEXT,
+  accessed_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_access_logs_qr_id ON access_logs (qr_id);
+
+CREATE TABLE webhook_events (
+  id TEXT PRIMARY KEY,
+  stripe_event_id TEXT NOT NULL UNIQUE,
+  event_type TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  processed INTEGER NOT NULL DEFAULT 0,
+  error_message TEXT,
+  received_at TEXT NOT NULL,
+  processed_at TEXT
+);
+
+-- 初期データ: 商品(農家直送みかん)
+INSERT INTO products (
+  id, slug, name, description, price_display, currency,
+  stripe_price_id, image_url, is_active, sort_order, created_at, updated_at
+) VALUES
+(
+  'prod_001',
+  'arita-mikan-5kg',
+  '有田みかん 5kg(訳あり)',
+  '和歌山県有田産の朝どれみかんを農園から直送。サイズ不揃いの訳ありですが味は保証します。',
+  3980,
+  'JPY',
+  'price_xxxxxxxxxxxxx',
+  '/images/mikan.svg',
+  1,
+  1,
+  datetime('now'),
+  datetime('now')
+),
+(
+  'prod_002',
+  'arita-mikan-10kg',
+  '有田みかん 10kg(訳あり)',
+  '和歌山県有田産の朝どれみかんを農園から直送。ご家族・贈答用にたっぷり10kg。',
+  6980,
+  'JPY',
+  'price_xxxxxxxxxxxxx',
+  '/images/mikan.svg',
+  1,
+  2,
+  datetime('now'),
+  datetime('now')
+);
+
+-- 初期データ: QRマスタ
+INSERT INTO qr_sources (
+  id, qr_id, name, source_type, campaign_id, location_name,
+  memo, destination_path, is_active, created_at, updated_at
+) VALUES
+(
+  'qr_001', 'flyer_001', '直売所チラシ', 'flyer', 'campaign_202607',
+  '農園直売所', '', '/products/arita-mikan-5kg', 1, datetime('now'), datetime('now')
+),
+(
+  'qr_002', 'store_001', '道の駅設置QR', 'store', 'campaign_202607',
+  '道の駅有田', '', '/products/arita-mikan-5kg', 1, datetime('now'), datetime('now')
+);

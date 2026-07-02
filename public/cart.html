@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カート | SAMPLE STORE</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="site-header__logo" href="/">SAMPLE STORE</a>
+  <nav class="site-header__nav">
+    <a href="/">商品一覧</a>
+    <a href="/about">About</a>
+  </nav>
+  <a class="cart-icon" href="/cart" aria-label="カート">
+    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    <span id="cart-badge" class="cart-icon__badge" hidden>0</span>
+  </a>
+</header>
+<main class="cart-page">
+  <h1>カート</h1>
+  <div id="cart-content"></div>
+</main>
+<footer class="site-footer">
+  <a href="/about">About</a>
+  <a href="/legal">特定商取引法に基づく表記</a>
+  <p>&copy; SAMPLE STORE</p>
+</footer>
+<script src="/js/cart.js"></script>
+<script src="/js/cart-page.js"></script>
+</body>
+</html>

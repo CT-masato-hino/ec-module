@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>売上/QRレポート | 管理画面</title>
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body class="admin-body">
+<aside class="admin-sidebar">
+  <div class="admin-sidebar__brand">山田みかん農園<span>管理画面</span></div>
+  <nav class="admin-sidebar__nav">
+    <a href="/admin"><span class="icon">&#127968;</span>ホーム</a>
+    <a href="/admin/products"><span class="icon">&#127818;</span>商品</a>
+    <a href="/admin/orders"><span class="icon">&#128230;</span>注文</a>
+    <a href="/admin/reports/qr" class="is-active"><span class="icon">&#128202;</span>売上/QRレポート</a>
+    <a href="/admin/qr-sources"><span class="icon">&#128241;</span>QRコード</a>
+  </nav>
+  <div class="admin-sidebar__footer">
+    <a href="#"><span class="icon">&#9881;</span>設定</a>
+    <a href="#"><span class="icon">&#10067;</span>ヘルプ</a>
+  </div>
+</aside>
+<div class="admin-content">
+  <div class="admin-content__header">
+    <h1>売上/QRレポート</h1>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>QR ID</th>
+            <th>QR名</th>
+            <th>流入種別</th>
+            <th>アクセス数</th>
+            <th>注文数</th>
+            <th>CVR</th>
+            <th>売上合計</th>
+            <th>平均単価</th>
+          </tr>
+        </thead>
+        <tbody id="report-body"></tbody>
+      </table>
+    </div>
+    <div id="report-empty" class="admin-empty-state" hidden>
+      <span class="icon">&#128202;</span>
+      データがありません
+    </div>
+  </div>
+</div>
+<script src="/js/admin-reports-qr.js"></script>
+</body>
+</html>

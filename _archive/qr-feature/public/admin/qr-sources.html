@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QRコード | 管理画面</title>
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body class="admin-body">
+<aside class="admin-sidebar">
+  <div class="admin-sidebar__brand">山田みかん農園<span>管理画面</span></div>
+  <nav class="admin-sidebar__nav">
+    <a href="/admin"><span class="icon">&#127968;</span>ホーム</a>
+    <a href="/admin/products"><span class="icon">&#127818;</span>商品</a>
+    <a href="/admin/orders"><span class="icon">&#128230;</span>注文</a>
+    <a href="/admin/reports/qr"><span class="icon">&#128202;</span>売上/QRレポート</a>
+    <a href="/admin/qr-sources" class="is-active"><span class="icon">&#128241;</span>QRコード</a>
+  </nav>
+  <div class="admin-sidebar__footer">
+    <a href="#"><span class="icon">&#9881;</span>設定</a>
+    <a href="#"><span class="icon">&#10067;</span>ヘルプ</a>
+  </div>
+</aside>
+<div class="admin-content">
+  <div class="admin-content__header">
+    <h1>QRコード</h1>
+    <button type="button" id="toggle-create-form" class="admin-button-primary">+ QRコードを登録</button>
+  </div>
+
+  <div class="admin-card admin-form-section" id="create-form-section">
+    <h2>QRコードを登録</h2>
+    <form class="admin-form-grid" id="create-form">
+      <label>QR ID<input type="text" name="qr_id" required placeholder="flyer_202607_a"></label>
+      <label>名称<input type="text" name="name" required></label>
+      <label>流入種別
+        <select name="source_type" required>
+          <option value="flyer">flyer</option>
+          <option value="store">store</option>
+          <option value="event">event</option>
+          <option value="sales">sales</option>
+          <option value="partner">partner</option>
+        </select>
+      </label>
+      <label>キャンペーンID<input type="text" name="campaign_id"></label>
+      <label>設置場所<input type="text" name="location_name"></label>
+      <label>遷移先パス<input type="text" name="destination_path" placeholder="/products/sample-product"></label>
+      <label>メモ<textarea name="memo" rows="3"></textarea></label>
+      <div class="admin-form-actions">
+        <button type="submit" class="admin-button-primary">登録する</button>
+        <button type="button" id="cancel-create-form" class="admin-button-secondary">キャンセル</button>
+      </div>
+      <p id="create-error" class="admin-error" hidden></p>
+    </form>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>QR ID</th>
+            <th>名称</th>
+            <th>流入種別</th>
+            <th>キャンペーンID</th>
+            <th>設置場所</th>
+            <th>状態</th>
+            <th>QRコード</th>
+          </tr>
+        </thead>
+        <tbody id="qr-sources-body"></tbody>
+      </table>
+    </div>
+    <div id="qr-sources-empty" class="admin-empty-state" hidden>
+      <span class="icon">&#128241;</span>
+      登録がありません
+    </div>
+  </div>
+</div>
+
+<div id="qr-modal-overlay" class="admin-modal-overlay" hidden>
+  <div class="admin-modal">
+    <div class="admin-modal__header">
+      <h2>QRコード</h2>
+      <button type="button" id="qr-modal-close" class="admin-modal__close" aria-label="閉じる">&times;</button>
+    </div>
+    <div class="admin-modal__body">
+      <p id="qr-modal-url" class="admin-modal__url"></p>
+      <div id="qr-modal-canvas-wrap" class="admin-modal__canvas-wrap"></div>
+    </div>
+    <div class="admin-modal__footer">
+      <button type="button" id="qr-modal-download" class="admin-button-primary">PNGをダウンロード</button>
+      <button type="button" id="qr-modal-close-2" class="admin-button-secondary">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/vendor/qrcode.js"></script>
+<script src="/js/admin-qr-sources.js"></script>
+</body>
+</html>

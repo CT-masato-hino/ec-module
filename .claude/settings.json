@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run db:migrations:apply:local:*)",
+      "Bash(npx tsc --noEmit:*)",
+      "Bash(npx wrangler d1 migrations apply ec_db --local:*)",
+      "Bash(npx wrangler d1 execute ec_db --local:*)",
+      "Bash(curl -s http://localhost:8788/*)",
+      "Bash(curl -s -u admin:admin1234 http://localhost:8788/*)"
+    ]
+  }
+}

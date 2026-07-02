@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#fff4e0"/>
+  <!-- 段ボール箱 -->
+  <rect x="60" y="150" width="280" height="110" fill="#d9a15c"/>
+  <rect x="60" y="150" width="280" height="110" fill="none" stroke="#a86c33" stroke-width="3"/>
+  <rect x="60" y="150" width="280" height="18" fill="#c48d4a"/>
+  <text x="200" y="190" font-family="sans-serif" font-size="16" fill="#6b4321" text-anchor="middle">ARITA MIKAN</text>
+  <line x1="60" y1="150" x2="340" y2="150" stroke="#a86c33" stroke-width="2"/>
+  <!-- 箱に山盛りのみかん -->
+  <circle cx="120" cy="140" r="34" fill="#f5941f"/>
+  <circle cx="170" cy="118" r="38" fill="#f5941f"/>
+  <circle cx="225" cy="132" r="36" fill="#f5941f"/>
+  <circle cx="275" cy="120" r="34" fill="#f5941f"/>
+  <circle cx="150" cy="150" r="30" fill="#f2891a"/>
+  <circle cx="205" cy="160" r="30" fill="#f2891a"/>
+  <circle cx="255" cy="150" r="30" fill="#f2891a"/>
+  <circle cx="300" cy="140" r="28" fill="#f2891a"/>
+  <!-- ヘタ -->
+  <ellipse cx="170" cy="86" rx="9" ry="5" fill="#5da845" transform="rotate(-15 170 86)"/>
+  <ellipse cx="225" cy="102" rx="8" ry="4" fill="#5da845" transform="rotate(10 225 102)"/>
+  <ellipse cx="275" cy="92" rx="8" ry="4" fill="#5da845" transform="rotate(-10 275 92)"/>
+  <text x="200" y="285" font-family="sans-serif" font-size="20" fill="#7a4a1a" text-anchor="middle">朝どれ有田みかん(箱入り)</text>
+</svg>

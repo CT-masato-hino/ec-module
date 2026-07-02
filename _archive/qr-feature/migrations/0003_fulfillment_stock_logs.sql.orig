@@ -1,0 +1,12 @@
+-- 発送対応状況・在庫管理・アクセスログの追加
+
+-- 注文の対応状況(発送処理): pending=未対応/processing=対応中/shipped=発送済み/cancelled=キャンセル
+ALTER TABLE orders ADD COLUMN fulfillment_status TEXT NOT NULL DEFAULT 'pending';
+
+CREATE INDEX idx_orders_fulfillment_status ON orders (fulfillment_status);
+
+-- 商品の在庫数。NULLの場合は在庫管理をしない(売り越し防止の対象外)
+ALTER TABLE products ADD COLUMN stock INTEGER;
+
+UPDATE products SET stock = 20 WHERE slug = 'arita-mikan-5kg';
+UPDATE products SET stock = 10 WHERE slug = 'arita-mikan-10kg';

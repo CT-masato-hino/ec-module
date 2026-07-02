@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#fff4e0"/>
+  <circle cx="200" cy="160" r="90" fill="#f5941f"/>
+  <circle cx="200" cy="160" r="90" fill="none" stroke="#e07b00" stroke-width="3"/>
+  <path d="M200 70 C 190 50, 210 45, 205 30" stroke="#4c8c3a" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <ellipse cx="222" cy="42" rx="18" ry="10" fill="#5da845" transform="rotate(-25 222 42)"/>
+  <text x="200" y="270" font-family="sans-serif" font-size="20" fill="#7a4a1a" text-anchor="middle">有田みかん</text>
+</svg>

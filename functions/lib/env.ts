@@ -1,0 +1,11 @@
+export interface Env {
+  DB: D1Database;
+  STRIPE_SECRET_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
+  STRIPE_SUCCESS_URL: string;
+  STRIPE_CANCEL_URL: string;
+  APP_BASE_URL: string;
+  ENVIRONMENT: string;
+  ADMIN_USERNAME: string;
+  ADMIN_PASSWORD: string;
+}

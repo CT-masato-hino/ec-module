@@ -1,0 +1,61 @@
+-- BASE風「農家直販みかんショップ」化: カート・配送先・商品詳細情報の追加
+
+-- ordersに配送先カラムを追加
+ALTER TABLE orders ADD COLUMN shipping_name TEXT;
+ALTER TABLE orders ADD COLUMN shipping_postal_code TEXT;
+ALTER TABLE orders ADD COLUMN shipping_address TEXT;
+ALTER TABLE orders ADD COLUMN shipping_phone TEXT;
+ALTER TABLE orders ADD COLUMN note TEXT;
+
+-- 注文明細(複数商品対応)
+CREATE TABLE order_items (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  product_id TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  unit_price INTEGER NOT NULL,
+  quantity INTEGER NOT NULL,
+  subtotal INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_order_items_order_id ON order_items (order_id);
+
+-- カート内容+配送先を保持する仮注文(モック/本番Stripe共通で使う)
+CREATE TABLE checkout_sessions (
+  id TEXT PRIMARY KEY,
+  items_json TEXT NOT NULL,
+  shipping_json TEXT NOT NULL,
+  amount_total INTEGER NOT NULL,
+  qr_id TEXT NOT NULL,
+  qr_source_name TEXT,
+  source_type TEXT,
+  campaign_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  stripe_session_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- 商品情報の拡充(産地・内容量・発送目安・保存方法・画像一覧)
+ALTER TABLE products ADD COLUMN origin TEXT;
+ALTER TABLE products ADD COLUMN capacity TEXT;
+ALTER TABLE products ADD COLUMN shipping_note TEXT;
+ALTER TABLE products ADD COLUMN storage_note TEXT;
+ALTER TABLE products ADD COLUMN images_json TEXT;
+
+UPDATE products SET
+  origin = '和歌山県有田市',
+  capacity = '約5kg(S〜Lサイズ混合・約40〜60玉)',
+  shipping_note = 'ご注文から3〜5日で発送',
+  storage_note = '直射日光を避け、風通しの良い冷暗所で保存してください。',
+  images_json = '["/images/mikan-hero.svg","/images/mikan-cut.svg","/images/mikan-farm.svg"]'
+WHERE slug = 'arita-mikan-5kg';
+
+UPDATE products SET
+  origin = '和歌山県有田市',
+  capacity = '約10kg(S〜Lサイズ混合・約80〜120玉)',
+  shipping_note = 'ご注文から3〜5日で発送',
+  storage_note = '直射日光を避け、風通しの良い冷暗所で保存してください。',
+  images_json = '["/images/mikan-hero.svg","/images/mikan-cut.svg","/images/mikan-farm.svg"]'
+WHERE slug = 'arita-mikan-10kg';

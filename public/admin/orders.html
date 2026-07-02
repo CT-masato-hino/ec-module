@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>注文 | 管理画面</title>
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body class="admin-body">
+<aside class="admin-sidebar">
+  <div class="admin-sidebar__brand">SAMPLE STORE<span>管理画面</span></div>
+  <nav class="admin-sidebar__nav">
+    <a href="/admin"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>ホーム</a>
+    <a href="/admin/products"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>商品</a>
+    <a href="/admin/orders" class="is-active"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>注文</a>
+  </nav>
+  <div class="admin-sidebar__footer">
+    <a href="#"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>設定</a>
+    <a href="#"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>ヘルプ</a>
+  </div>
+</aside>
+<div class="admin-content">
+  <div class="admin-content__header">
+    <h1>注文</h1>
+  </div>
+
+  <div class="admin-card">
+    <h2>検索条件</h2>
+    <form id="filter-form">
+      <div class="admin-filter-row">
+        <label style="font-size:12.5px;color:var(--admin-text-muted);">期間</label>
+        <input type="date" name="date_from">
+        <span style="color:var(--admin-text-muted);">〜</span>
+        <input type="date" name="date_to">
+        <input type="text" name="product_id" placeholder="商品ID">
+      </div>
+      <div class="admin-filter-row">
+        <label style="font-size:12.5px;color:var(--admin-text-muted);">入金</label>
+        <div class="admin-status-chips" id="status-chips">
+          <button type="button" class="admin-status-chip is-active" data-status="">全て</button>
+          <button type="button" class="admin-status-chip" data-status="paid">paid</button>
+          <button type="button" class="admin-status-chip" data-status="unpaid">unpaid</button>
+        </div>
+        <input type="hidden" name="payment_status" value="">
+      </div>
+      <div class="admin-filter-row">
+        <label style="font-size:12.5px;color:var(--admin-text-muted);">対応状況</label>
+        <div class="admin-status-chips" id="fulfillment-chips">
+          <button type="button" class="admin-status-chip is-active" data-fulfillment="">全て</button>
+          <button type="button" class="admin-status-chip" data-fulfillment="pending">未対応</button>
+          <button type="button" class="admin-status-chip" data-fulfillment="processing">対応中</button>
+          <button type="button" class="admin-status-chip" data-fulfillment="shipped">発送済み</button>
+          <button type="button" class="admin-status-chip" data-fulfillment="cancelled">キャンセル</button>
+        </div>
+        <button type="submit" class="admin-search-button">検索</button>
+      </div>
+    </form>
+  </div>
+
+  <p class="admin-result-count" id="result-count"></p>
+
+  <div class="admin-card" id="orders-card">
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>注文日時</th>
+            <th>商品名</th>
+            <th>金額</th>
+            <th>決済状態</th>
+            <th>対応状況</th>
+            <th>メール</th>
+          </tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+    </div>
+    <div id="orders-empty" class="admin-empty-state" hidden>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      表示中の期間の注文がありません
+    </div>
+  </div>
+</div>
+<script src="/js/admin-orders.js"></script>
+</body>
+</html>
