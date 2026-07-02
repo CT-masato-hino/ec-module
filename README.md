@@ -84,6 +84,16 @@ stripe listen --forward-to localhost:8788/api/webhooks/stripe
 
 表示された `whsec_...` を `.dev.vars` の `STRIPE_WEBHOOK_SECRET` に設定する。
 
+### Webhook経路のテスト(実キー・Stripe CLI不要)
+
+署名検証〜注文作成のコードパスは、付属スクリプトで実キーなしにテストできる(`.dev.vars` のシークレットで正しく署名したイベントを送るため、本番と同一の検証ロジックを通る)。
+
+```bash
+node scripts/send-test-webhook.mjs <checkout_sessionsのID>
+```
+
+冪等性テスト: 引数で `stripe_session_id` と `event_id` を固定して再送すると、リトライ(同一イベント)は `duplicate:true`、二重配信(別イベント・同一セッション)は注文・在庫が増えないことを確認できる。
+
 本番デプロイ時は `wrangler pages secret put STRIPE_SECRET_KEY` 等でCloudflare側にも設定する。
 
 ## デプロイ
@@ -107,7 +117,7 @@ QRコード流入判定・QR経由売上集計・アクセスログ/CVR計測機
 
 ## 既知の制約
 
-- モック決済モードは開発・デモ用であり、Webhookの署名検証など本番と同一のコードパスは通らない。実際の決済導線・Webhook検証は実キー設定後にユーザー側で最終確認すること。
+- Webhookの署名検証〜注文作成は `scripts/send-test-webhook.mjs` により本番と同一コードパスで検証済み。**実キーでのみ検証可能な残りは「Stripe Checkout Session作成の実APIコール」と「Stripeからの実イベント配送」の2点**で、実キー設定後に本READMEの手順(テストカード 4242 4242 4242 4242 + `stripe listen`)で最終確認すること。
 - 簡易Basic認証はローカル/デモ向けの最低限の保護であり、本番はCloudflare Accessへの置き換えを前提とする。
 
 ## セキュリティ上の注意(このリポジトリを利用する場合)

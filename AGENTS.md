@@ -49,6 +49,21 @@ npm run typecheck                   # tsc --noEmit(変更後は必ず実行)
 
 DBを作り直すときは `rm -rf .wrangler/state/v3/d1` してからマイグレーションを再適用する。
 
+## 動作確認フロー(Webhook経路 — 実キー不要)
+
+Stripe Webhookの署名検証〜注文作成は、実キーなしで本番と同一のコードパスをテストできる:
+
+```bash
+# 1. checkout_sessionsを作る(モック決済画面のURLからsession_id=cs_...を控える)
+curl -s -X POST http://localhost:8788/api/checkout -H 'Content-Type: application/json' \
+  -d '{"items":[{"product_id":"prod_001","quantity":1}],"shipping":{"name":"テスト","email":"t@example.com","postal_code":"100-0001","address":"東京都","phone":"03-0000-0000"}}'
+# 2. .dev.varsのSTRIPE_WEBHOOK_SECRETで正しく署名したcheckout.session.completedを送る
+node scripts/send-test-webhook.mjs <cs_...>
+```
+
+同一イベントID再送→`duplicate:true`、別イベントID・同一Stripeセッション→注文/在庫が増えない、不正署名→400、まで確認すること。
+**実キーでのみ検証可能な残り**: `stripe.checkout.sessions.create` の実APIコールと、Stripeからの実イベント配送(`stripe listen`)。実キー設定後にREADMEの手順で確認する。
+
 ## 動作確認フロー(モック決済)
 
 1. `/products/sample-item-a` → 数量選択 → カートに入れる
