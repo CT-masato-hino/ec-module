@@ -48,6 +48,9 @@ npm run typecheck                   # tsc --noEmit(変更後は必ず実行)
 ```
 
 DBを作り直すときは `rm -rf .wrangler/state/v3/d1` してからマイグレーションを再適用する。
+**注意: DB stateを消したら、起動中のdevサーバーは必ず再起動する**(古いDBハンドルを掴んだままになり応答が壊れる)。
+
+サンプルデータ(商品2件+注文等)の一括削除: `npm run data:clear:local` / `data:clear:remote`(実運用開始時用。`/clear-sample-data` スラッシュコマンドあり)。ストアは商品0件でもエンプティステート表示で壊れない(検証済み)。
 
 ## 動作確認フロー(Webhook経路 — 実キー不要)
 

@@ -8,6 +8,8 @@
     "deploy": "wrangler pages deploy public",
     "db:migrations:apply:local": "wrangler d1 migrations apply ec_db --local",
     "db:migrations:apply:remote": "wrangler d1 migrations apply ec_db --remote",
+    "data:clear:local": "wrangler d1 execute ec_db --local --file scripts/clear-sample-data.sql",
+    "data:clear:remote": "wrangler d1 execute ec_db --remote --file scripts/clear-sample-data.sql",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

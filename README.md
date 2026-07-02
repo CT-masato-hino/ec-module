@@ -33,8 +33,19 @@ npm run dev
 
 `http://localhost:8788` にアクセスすると、商品一覧→詳細→カート→配送先入力→モック決済→注文保存(明細・配送先付き)、という流れをそのまま確認できる。
 
-- 商品: サンプルアイテム A / B(初期データ)
+- 商品: サンプルアイテム A / B(初期データ。すぐ動きを見られるよう最初から入れてある)
 - 管理画面: `http://localhost:8788/admin`(ユーザー名 `admin` / パスワード `admin1234`。`wrangler.toml` の `ADMIN_USERNAME` / `ADMIN_PASSWORD` で変更可能)
+
+### 実案件で使い始めるとき(サンプルデータの削除)
+
+サンプル商品・テスト注文・Webhookログを一括削除してまっさらな状態にできる。
+
+```bash
+npm run data:clear:local    # ローカルD1
+npm run data:clear:remote   # 本番D1(実行前に対象をよく確認すること)
+```
+
+Claude Codeで開発している場合は `/clear-sample-data` スラッシュコマンド(`.claude/commands/clear-sample-data.md`)でも同じことができる(確認付き)。サンプルデータを戻したい場合は `rm -rf .wrangler/state/v3/d1 && npm run db:migrations:apply:local` でseedごと再作成する。
 
 ## モック決済モードについて
 
