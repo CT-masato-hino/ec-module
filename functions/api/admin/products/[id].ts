@@ -64,3 +64,18 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
 
   return Response.json({ ok: true });
 };
+
+export const onRequestDelete: PagesFunction<Env> = async (context) => {
+  const id = context.params.id as string;
+
+  const existing = await context.env.DB.prepare('SELECT id FROM products WHERE id = ?').bind(id).first();
+  if (!existing) {
+    return Response.json({ error: 'not_found' }, { status: 404 });
+  }
+
+  // 注文履歴はorder_itemsに商品名・単価がスナップショット保存されているため、
+  // 商品を削除しても過去の注文表示は壊れない
+  await context.env.DB.prepare('DELETE FROM products WHERE id = ?').bind(id).run();
+
+  return Response.json({ ok: true });
+};

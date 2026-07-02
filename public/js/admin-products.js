@@ -41,6 +41,11 @@ function renderProducts(products) {
           <span class="admin-toggle__label">${p.is_active ? '公開' : '非公開'}</span>
         </button>
       </td>
+      <td>
+        <button type="button" class="admin-icon-button delete-product" data-id="${p.id}" data-name="${escapeHtml(p.name)}" aria-label="削除">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        </button>
+      </td>
     `;
     tbody.appendChild(tr);
   }
@@ -85,9 +90,50 @@ tbody.addEventListener('click', async (e) => {
     return;
   }
 
+  const deleteTarget = e.target.closest('.delete-product');
+  if (deleteTarget) {
+    openDeleteModal(deleteTarget.dataset.id, deleteTarget.dataset.name);
+    return;
+  }
+
   const stockTarget = e.target.closest('.stock-display');
   if (stockTarget) {
     startStockEdit(stockTarget);
+  }
+});
+
+// 削除確認モーダル
+const deleteModal = document.getElementById('delete-modal');
+const deleteTargetName = document.getElementById('delete-target-name');
+const deleteConfirmButton = document.getElementById('delete-confirm');
+let deleteTargetId = null;
+
+function openDeleteModal(id, name) {
+  deleteTargetId = id;
+  deleteTargetName.textContent = name;
+  deleteModal.hidden = false;
+}
+
+function closeDeleteModal() {
+  deleteModal.hidden = true;
+  deleteTargetId = null;
+}
+
+document.getElementById('delete-modal-close').addEventListener('click', closeDeleteModal);
+document.getElementById('delete-cancel').addEventListener('click', closeDeleteModal);
+deleteModal.addEventListener('click', (e) => {
+  if (e.target === deleteModal) closeDeleteModal();
+});
+
+deleteConfirmButton.addEventListener('click', async () => {
+  if (!deleteTargetId) return;
+  deleteConfirmButton.disabled = true;
+  try {
+    await fetch(`/api/admin/products/${deleteTargetId}`, { method: 'DELETE' });
+  } finally {
+    deleteConfirmButton.disabled = false;
+    closeDeleteModal();
+    loadProducts();
   }
 });
 

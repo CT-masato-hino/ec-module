@@ -67,6 +67,7 @@
             <th>価格</th>
             <th>在庫</th>
             <th>公開状態</th>
+            <th>削除</th>
           </tr>
         </thead>
         <tbody id="products-body"></tbody>
@@ -75,6 +76,24 @@
     <div id="products-empty" class="admin-empty-state" hidden>
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
       該当する商品がありません
+    </div>
+  </div>
+</div>
+
+<div id="delete-modal" class="admin-modal-overlay" hidden>
+  <div class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="admin-modal__header">
+      <h2 id="delete-modal-title">商品を削除</h2>
+      <button type="button" id="delete-modal-close" class="admin-modal__close" aria-label="閉じる">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="admin-modal__body">
+      <p>「<span id="delete-target-name"></span>」を削除します。この操作は取り消せません。<br>過去の注文履歴には影響しません。</p>
+    </div>
+    <div class="admin-modal__footer">
+      <button type="button" id="delete-cancel" class="admin-button-secondary">キャンセル</button>
+      <button type="button" id="delete-confirm" class="admin-button-danger">削除する</button>
     </div>
   </div>
 </div>

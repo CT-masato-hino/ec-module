@@ -489,3 +489,35 @@ table.admin-table img.admin-thumb { width: 40px; height: 40px; object-fit: cover
   .admin-sidebar__footer { display: none; }
   .admin-content { padding: 20px; }
 }
+
+/* 削除ボタン(テーブル行内のゴミ箱アイコン) */
+.admin-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.admin-icon-button:hover { background: #fde8e8; color: #b91c1c; }
+.admin-icon-button .icon { width: 16px; height: 16px; }
+
+/* 危険操作ボタン(モーダル内の削除実行) */
+.admin-button-danger {
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 8px;
+  background: #b91c1c;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.admin-button-danger:hover { background: #991b1b; }
