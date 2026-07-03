@@ -12,6 +12,9 @@
   --admin-sidebar-width: 220px;
 }
 
+/* display指定を持つ要素でもhidden属性を必ず優先させる(styles.cssと同じバグ対策) */
+[hidden] { display: none !important; }
+
 body.admin-body {
   margin: 0;
   background: var(--admin-bg);
@@ -603,3 +606,5 @@ table.admin-table img.admin-thumb { width: 40px; height: 40px; object-fit: cover
 }
 .image-dropzone__status { margin: 0; font-size: 12px; color: var(--admin-text-muted); }
 .image-dropzone__status.is-error { color: #b91c1c; }
+.image-dropzone__actions { display: flex; gap: 8px; margin-top: 12px; }
+.image-dropzone__actions .admin-button-secondary { height: 34px; padding: 0 14px; font-size: 12.5px; }

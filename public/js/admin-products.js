@@ -222,6 +222,7 @@ function startStockEdit(stockEl) {
 const dropzone = document.getElementById('image-dropzone');
 const imageFileInput = document.getElementById('image-file-input');
 const imagePreview = document.getElementById('image-preview');
+const imagePreviewActions = document.getElementById('image-preview-actions');
 const dropzonePlaceholder = document.getElementById('image-dropzone-placeholder');
 const uploadStatus = document.getElementById('image-upload-status');
 
@@ -229,9 +230,11 @@ function setImagePreview(url) {
   if (url) {
     imagePreview.src = url;
     imagePreview.hidden = false;
+    imagePreviewActions.hidden = false;
     dropzonePlaceholder.hidden = true;
   } else {
     imagePreview.hidden = true;
+    imagePreviewActions.hidden = true;
     dropzonePlaceholder.hidden = false;
   }
 }
@@ -279,14 +282,16 @@ dropzone.addEventListener('drop', (e) => {
   if (file) uploadImage(file);
 });
 document.getElementById('select-image-button').addEventListener('click', () => imageFileInput.click());
+document.getElementById('change-image-button').addEventListener('click', () => imageFileInput.click());
+document.getElementById('remove-image-button').addEventListener('click', () => {
+  createForm.elements.image_url.value = '';
+  setImagePreview('');
+  showUploadStatus('', false);
+});
 imageFileInput.addEventListener('change', () => {
   const file = imageFileInput.files?.[0];
   if (file) uploadImage(file);
   imageFileInput.value = '';
-});
-// URL直接入力にもプレビューを追従させる
-createForm.elements.image_url.addEventListener('change', () => {
-  setImagePreview(createForm.elements.image_url.value.trim());
 });
 
 toggleCreateFormButton.addEventListener('click', () => {
