@@ -29,6 +29,15 @@ async function loadOrderSummary() {
       )
       .join('');
 
+    const bankTransferHtml =
+      order.payment_method === 'bank_transfer' && data.bank_transfer_info
+        ? `<div class="bank-transfer-info">
+            <p><strong>お振込先</strong><br>${escapeHtml(data.bank_transfer_info)}</p>
+            <p>お振込の際は、お名前の前に注文番号(${escapeHtml(order.id)})をご記入ください。</p>
+            <p>ご入金確認後に発送いたします。</p>
+          </div>`
+        : '';
+
     summaryEl.innerHTML = `
       <p class="order-summary__number">ご注文番号: ${escapeHtml(order.id)}</p>
       <table class="cart-table order-summary__items">
@@ -37,7 +46,8 @@ async function loadOrderSummary() {
       </table>
       <p class="cart-total">合計 &yen;${Number(order.amount_total).toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>
       ${order.shipping_name ? `<p class="order-summary__shipping">お届け先: ${escapeHtml(order.shipping_name)}様</p>` : ''}
-      ${order.payment_status === 'unpaid' ? '<p class="order-summary__pending-payment">お支払いはまだ完了していません。ご入金が確認され次第、発送の準備を開始します。</p>' : ''}
+      ${order.payment_status === 'unpaid' && order.payment_method !== 'bank_transfer' ? '<p class="order-summary__pending-payment">お支払いはまだ完了していません。ご入金が確認され次第、発送の準備を開始します。</p>' : ''}
+      ${bankTransferHtml}
     `;
     summaryEl.hidden = false;
     if (defaultMessageEl) defaultMessageEl.hidden = true;

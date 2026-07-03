@@ -8,4 +8,8 @@ export interface Env {
   ENVIRONMENT: string;
   ADMIN_USERNAME: string;
   ADMIN_PASSWORD: string;
+  RESEND_API_KEY: string;
+  EMAIL_FROM: string;
+  PAYMENT_METHODS: string;
+  BANK_TRANSFER_INFO: string;
 }

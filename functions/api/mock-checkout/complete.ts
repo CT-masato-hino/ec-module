@@ -2,6 +2,7 @@ import type { Env } from '../../lib/env';
 import { getCheckoutSessionById, nowIso } from '../../lib/db';
 import { createOrderIfNotExists, type OrderItemInput } from '../../lib/orders';
 import { isMockMode } from '../../lib/mock';
+import { sendEmail, buildOrderConfirmationEmail } from '../../lib/email';
 
 interface CheckoutItem {
   product_id: string;
@@ -55,7 +56,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     subtotal: item.subtotal,
   }));
 
-  await createOrderIfNotExists(context.env.DB, {
+  const { created, orderId } = await createOrderIfNotExists(context.env.DB, {
     stripeSessionId: sessionId,
     stripeEventId: null,
     items: orderItems,
@@ -70,11 +71,37 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       phone: shipping.phone,
       note: shipping.note,
     },
+    userId: checkoutSession.user_id,
+    paymentMethod: checkoutSession.payment_method,
   });
 
   await context.env.DB.prepare(`UPDATE checkout_sessions SET status = 'completed', updated_at = ? WHERE id = ?`)
     .bind(nowIso(), sessionId)
     .run();
+
+  if (created) {
+    const { subject, text } = buildOrderConfirmationEmail({
+      orderId,
+      items: orderItems.map((item) => ({
+        productName: item.productName,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+      })),
+      amountTotal: checkoutSession.amount_total,
+      shippingName: shipping.name,
+      paymentStatus: 'paid',
+    });
+    context.waitUntil(
+      sendEmail(context.env, {
+        to: shipping.email,
+        subject,
+        text,
+        emailType: 'order_confirmation',
+        orderId,
+      })
+    );
+  }
 
   return Response.redirect(`${origin}/checkout/success?session_id=${encodeURIComponent(sessionId)}`, 303);
 };

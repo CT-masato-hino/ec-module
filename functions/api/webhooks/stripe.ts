@@ -1,8 +1,9 @@
 import Stripe from 'stripe';
 import type { Env } from '../../lib/env';
-import { newId, nowIso, isUniqueConstraintError, getCheckoutSessionById } from '../../lib/db';
+import { newId, nowIso, isUniqueConstraintError, getCheckoutSessionById, type OrderRow } from '../../lib/db';
 import { createOrderIfNotExists, type OrderItemInput } from '../../lib/orders';
 import { createStripeClient } from '../../lib/stripe';
+import { sendEmail, buildOrderConfirmationEmail, buildPaymentConfirmedEmail } from '../../lib/email';
 
 interface CheckoutItem {
   product_id: string;
@@ -52,7 +53,12 @@ async function markWebhookProcessed(db: D1Database, eventId: string, errorMessag
     .run();
 }
 
-async function handleCheckoutCompleted(db: D1Database, session: Stripe.Checkout.Session): Promise<void> {
+async function handleCheckoutCompleted(
+  env: Env,
+  session: Stripe.Checkout.Session,
+  waitUntil: (promise: Promise<unknown>) => void
+): Promise<void> {
+  const db = env.DB;
   const checkoutSessionId = session.metadata?.checkout_session_id;
   if (!checkoutSessionId) {
     console.error('checkout.session.completed missing checkout_session_id metadata', session.id);
@@ -76,13 +82,15 @@ async function handleCheckoutCompleted(db: D1Database, session: Stripe.Checkout.
     subtotal: item.subtotal,
   }));
 
-  await createOrderIfNotExists(db, {
+  const paymentStatus = session.payment_status ?? 'unpaid';
+
+  const { created, orderId } = await createOrderIfNotExists(db, {
     stripeSessionId: session.id,
     stripeEventId: session.id,
     items: orderItems,
     amountTotal: session.amount_total ?? checkoutSession.amount_total,
     currency: (session.currency ?? 'jpy').toUpperCase(),
-    paymentStatus: session.payment_status ?? 'unpaid',
+    paymentStatus,
     customerEmail: session.customer_details?.email ?? session.customer_email ?? shipping.email,
     shipping: {
       name: shipping.name,
@@ -91,23 +99,79 @@ async function handleCheckoutCompleted(db: D1Database, session: Stripe.Checkout.
       phone: shipping.phone,
       note: shipping.note,
     },
+    userId: checkoutSession.user_id,
+    paymentMethod: checkoutSession.payment_method,
   });
 
   await db
     .prepare(`UPDATE checkout_sessions SET status = 'completed', updated_at = ? WHERE id = ?`)
     .bind(nowIso(), checkoutSessionId)
     .run();
+
+  if (created) {
+    const { subject, text } = buildOrderConfirmationEmail({
+      orderId,
+      items: orderItems.map((item) => ({
+        productName: item.productName,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+      })),
+      amountTotal: session.amount_total ?? checkoutSession.amount_total,
+      shippingName: shipping.name,
+      paymentStatus,
+    });
+    waitUntil(
+      sendEmail(env, {
+        to: shipping.email,
+        subject,
+        text,
+        emailType: 'order_confirmation',
+        orderId,
+      })
+    );
+  }
 }
 
 /**
  * コンビニ払い・銀行振込などの遅延決済では、checkout.session.completed(注文確定・未入金)の後に
  * async_payment_succeeded / async_payment_failed で入金結果が届くため、注文の入金状態を更新する。
+ * paid遷移時は入金確認メールを送る(すでにpaidだった場合は二重送信しない)。
  */
-async function updatePaymentStatus(db: D1Database, stripeSessionId: string, paymentStatus: string): Promise<void> {
+async function updatePaymentStatus(
+  env: Env,
+  stripeSessionId: string,
+  paymentStatus: string,
+  waitUntil: (promise: Promise<unknown>) => void
+): Promise<void> {
+  const db = env.DB;
+  const existing = await db
+    .prepare('SELECT * FROM orders WHERE stripe_session_id = ?')
+    .bind(stripeSessionId)
+    .first<OrderRow>();
+
+  if (!existing) return;
+
   await db
     .prepare(`UPDATE orders SET payment_status = ?, updated_at = ? WHERE stripe_session_id = ?`)
     .bind(paymentStatus, nowIso(), stripeSessionId)
     .run();
+
+  if (paymentStatus === 'paid' && existing.payment_status !== 'paid') {
+    const { subject, text } = buildPaymentConfirmedEmail({
+      orderId: existing.id,
+      shippingName: existing.shipping_name ?? '',
+    });
+    waitUntil(
+      sendEmail(env, {
+        to: existing.customer_email ?? '',
+        subject,
+        text,
+        emailType: 'payment_confirmed',
+        orderId: existing.id,
+      })
+    );
+  }
 }
 
 async function markCheckoutSessionExpired(db: D1Database, session: Stripe.Checkout.Session): Promise<void> {
@@ -147,19 +211,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutCompleted(context.env.DB, session);
+        await handleCheckoutCompleted(context.env, session, (p) => context.waitUntil(p));
         break;
       }
       case 'checkout.session.async_payment_succeeded': {
         // 遅延決済(コンビニ払い・銀行振込等)の入金完了
         const session = event.data.object as Stripe.Checkout.Session;
-        await updatePaymentStatus(context.env.DB, session.id, 'paid');
+        await updatePaymentStatus(context.env, session.id, 'paid', (p) => context.waitUntil(p));
         break;
       }
       case 'checkout.session.async_payment_failed': {
         // 遅延決済の期限切れ・入金失敗
         const session = event.data.object as Stripe.Checkout.Session;
-        await updatePaymentStatus(context.env.DB, session.id, 'failed');
+        await updatePaymentStatus(context.env, session.id, 'failed', (p) => context.waitUntil(p));
         break;
       }
       case 'checkout.session.expired': {

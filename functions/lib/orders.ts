@@ -25,13 +25,19 @@ export interface CreateOrderParams {
   paymentStatus: string;
   customerEmail: string | null;
   shipping: ShippingInput;
+  userId: string | null;
+  paymentMethod: string;
 }
 
 /**
  * stripe_session_id のUNIQUE制約により、同一セッションからの重複INSERTは無視する(冪等性)。
  * ordersとorder_itemsはD1のbatchでまとめて書き込む。
+ * 戻り値の created は「実際にこの呼び出しでINSERTしたか」を示す(注文確認メールの二重送信防止に使う)。
  */
-export async function createOrderIfNotExists(db: D1Database, params: CreateOrderParams): Promise<void> {
+export async function createOrderIfNotExists(
+  db: D1Database,
+  params: CreateOrderParams
+): Promise<{ created: boolean; orderId: string }> {
   const now = nowIso();
   const orderId = newId('order');
 
@@ -48,8 +54,9 @@ export async function createOrderIfNotExists(db: D1Database, params: CreateOrder
         id, stripe_session_id, stripe_event_id, product_id, product_name,
         amount_total, currency, payment_status, customer_email,
         ordered_at, created_at, updated_at,
-        shipping_name, shipping_postal_code, shipping_address, shipping_phone, note
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        shipping_name, shipping_postal_code, shipping_address, shipping_phone, note,
+        user_id, payment_method
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       orderId,
@@ -68,7 +75,9 @@ export async function createOrderIfNotExists(db: D1Database, params: CreateOrder
       params.shipping.postalCode,
       params.shipping.address,
       params.shipping.phone,
-      params.shipping.note
+      params.shipping.note,
+      params.userId,
+      params.paymentMethod
     );
 
   const itemStmts = params.items.map((item) =>
@@ -96,8 +105,10 @@ export async function createOrderIfNotExists(db: D1Database, params: CreateOrder
     await db.batch([orderStmt, ...itemStmts, ...stockStmts]);
   } catch (err) {
     if (isUniqueConstraintError(err)) {
-      return;
+      return { created: false, orderId };
     }
     throw err;
   }
+
+  return { created: true, orderId };
 }

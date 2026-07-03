@@ -26,6 +26,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       currency: order.currency,
       ordered_at: order.ordered_at,
       payment_status: order.payment_status,
+      payment_method: order.payment_method,
       shipping_name: order.shipping_name,
       items: items.map((item) => ({
         product_name: item.product_name,
@@ -34,5 +35,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         subtotal: item.subtotal,
       })),
     },
+    bank_transfer_info: order.payment_method === 'bank_transfer' ? context.env.BANK_TRANSFER_INFO : null,
   });
 };

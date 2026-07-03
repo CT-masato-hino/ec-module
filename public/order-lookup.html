@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>決済がキャンセルされました | SAMPLE STORE</title>
+<title>注文状況の確認 | SAMPLE STORE</title>
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -23,10 +23,22 @@
     </a>
   </div>
 </header>
-<main class="result-page">
-  <h1>決済がキャンセルされました</h1>
-  <p>決済は完了していません。カート内の商品はそのまま残っていますので、もう一度お手続きください。</p>
-  <a href="/cart">カートへ戻る</a>
+<main class="order-lookup-page">
+  <h1>注文状況の確認</h1>
+  <p class="order-lookup-page__desc">会員登録なしでご注文いただいた場合も、注文番号とご注文時のメールアドレスで注文状況をご確認いただけます。</p>
+
+  <form id="lookup-form" class="auth-form">
+    <label>注文番号<span class="required">*</span>
+      <input type="text" name="order_id" required placeholder="order_...">
+    </label>
+    <label>メールアドレス<span class="required">*</span>
+      <input type="email" name="email" required>
+    </label>
+    <button type="submit" id="lookup-button">確認する</button>
+    <p id="lookup-error" class="error" hidden></p>
+  </form>
+
+  <div id="lookup-result" class="order-lookup-result" hidden></div>
 </main>
 <footer class="site-footer">
   <a href="/about">About</a>
@@ -35,5 +47,6 @@
   <p>&copy; SAMPLE STORE</p>
 </footer>
 <script src="/js/cart.js"></script>
+<script src="/js/order-lookup.js"></script>
 </body>
 </html>

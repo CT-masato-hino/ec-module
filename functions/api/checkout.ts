@@ -2,6 +2,10 @@ import type { Env } from '../lib/env';
 import { getProductById, newId, nowIso } from '../lib/db';
 import { createStripeClient } from '../lib/stripe';
 import { isMockMode } from '../lib/mock';
+import { getUserFromRequest } from '../lib/user-auth';
+import { getEnabledPaymentMethods, isPaymentMethod } from '../lib/payment';
+import { createOrderIfNotExists, type OrderItemInput } from '../lib/orders';
+import { sendEmail, buildOrderConfirmationEmail } from '../lib/email';
 
 interface CheckoutItemInput {
   product_id?: string;
@@ -20,6 +24,7 @@ interface ShippingInput {
 interface CheckoutRequestBody {
   items?: CheckoutItemInput[];
   shipping?: ShippingInput;
+  payment_method?: string;
 }
 
 interface ResolvedItem {
@@ -66,6 +71,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   if (!shipping) {
     return Response.json({ error: 'shipping_required' }, { status: 400 });
   }
+
+  const enabledPaymentMethods = getEnabledPaymentMethods(context.env);
+  const paymentMethod = body.payment_method;
+  if (!isPaymentMethod(paymentMethod) || !enabledPaymentMethods.includes(paymentMethod)) {
+    return Response.json({ error: 'invalid_payment_method' }, { status: 400 });
+  }
+
+  const user = await getUserFromRequest(context.env.DB, context.request);
 
   // 同一商品が複数明細に分かれていると在庫検証をすり抜けるため、product_id単位で数量を合算する
   const mergedQuantities = new Map<string, number>();
@@ -134,11 +147,75 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   await context.env.DB.prepare(
     `INSERT INTO checkout_sessions (
       id, items_json, shipping_json, amount_total,
-      status, stripe_session_id, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, 'pending', NULL, ?, ?)`
+      status, stripe_session_id, created_at, updated_at, user_id, payment_method
+    ) VALUES (?, ?, ?, ?, 'pending', NULL, ?, ?, ?, ?)`
   )
-    .bind(checkoutSessionId, itemsJson, shippingJson, amountTotal, now, now)
+    .bind(checkoutSessionId, itemsJson, shippingJson, amountTotal, now, now, user?.id ?? null, paymentMethod)
     .run();
+
+  if (paymentMethod === 'bank_transfer') {
+    // 銀行振込は決済画面を挟まず、その場で注文を作成する(入金待ち状態)。
+    // 在庫予約・冪等性はcreateOrderIfNotExistsのbatch処理をそのまま利用する。
+    const orderItems: OrderItemInput[] = resolvedItems.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+      subtotal: item.subtotal,
+    }));
+
+    const { created, orderId } = await createOrderIfNotExists(context.env.DB, {
+      stripeSessionId: checkoutSessionId,
+      stripeEventId: null,
+      items: orderItems,
+      amountTotal,
+      currency: 'JPY',
+      paymentStatus: 'unpaid',
+      customerEmail: shipping.email,
+      shipping: {
+        name: shipping.name,
+        postalCode: shipping.postalCode,
+        address: shipping.address,
+        phone: shipping.phone,
+        note: shipping.note,
+      },
+      userId: user?.id ?? null,
+      paymentMethod: 'bank_transfer',
+    });
+
+    await context.env.DB.prepare(`UPDATE checkout_sessions SET status = 'completed', updated_at = ? WHERE id = ?`)
+      .bind(nowIso(), checkoutSessionId)
+      .run();
+
+    if (created) {
+      const { subject, text } = buildOrderConfirmationEmail({
+        orderId,
+        items: orderItems.map((item) => ({
+          productName: item.productName,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          subtotal: item.subtotal,
+        })),
+        amountTotal,
+        shippingName: shipping.name,
+        paymentStatus: 'unpaid',
+      });
+      const bankNote = `\n\nお振込先: ${context.env.BANK_TRANSFER_INFO}\nお振込の際は、お名前の前に注文番号(${orderId})をご記入ください。\nご入金確認後に発送いたします。`;
+      context.waitUntil(
+        sendEmail(context.env, {
+          to: shipping.email,
+          subject,
+          text: text + bankNote,
+          emailType: 'order_confirmation',
+          orderId,
+        })
+      );
+    }
+
+    const url = new URL('/checkout/success', context.request.url);
+    url.searchParams.set('session_id', checkoutSessionId);
+    return Response.json({ url: url.toString() });
+  }
 
   if (isMockMode(context.env)) {
     const url = new URL('/mock-checkout', context.request.url);

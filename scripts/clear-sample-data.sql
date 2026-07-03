@@ -6,6 +6,7 @@
 -- ローカル:  npm run data:clear:local
 -- リモート:  npm run data:clear:remote  (本番D1に対して実行されるので注意)
 
+DELETE FROM email_logs;
 DELETE FROM order_items;
 DELETE FROM orders;
 DELETE FROM checkout_sessions;

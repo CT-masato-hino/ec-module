@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>決済がキャンセルされました | SAMPLE STORE</title>
+<title>マイページ | SAMPLE STORE</title>
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -23,10 +23,32 @@
     </a>
   </div>
 </header>
-<main class="result-page">
-  <h1>決済がキャンセルされました</h1>
-  <p>決済は完了していません。カート内の商品はそのまま残っていますので、もう一度お手続きください。</p>
-  <a href="/cart">カートへ戻る</a>
+<main class="account-page">
+  <div class="account-page__header">
+    <h1>マイページ</h1>
+    <div class="account-page__user">
+      <span id="account-email"></span>
+      <button type="button" id="logout-button" class="button-link">ログアウト</button>
+    </div>
+  </div>
+
+  <h2>注文履歴</h2>
+  <div class="admin-table-wrap">
+    <table class="cart-table account-orders-table" id="orders-table">
+      <thead>
+        <tr>
+          <th>注文日時</th>
+          <th>注文番号</th>
+          <th>商品</th>
+          <th>合計</th>
+          <th>入金</th>
+          <th>配送状況</th>
+        </tr>
+      </thead>
+      <tbody id="orders-body"></tbody>
+    </table>
+  </div>
+  <p id="orders-empty" class="cart-empty" hidden>注文履歴はまだありません。</p>
 </main>
 <footer class="site-footer">
   <a href="/about">About</a>
@@ -35,5 +57,6 @@
   <p>&copy; SAMPLE STORE</p>
 </footer>
 <script src="/js/cart.js"></script>
+<script src="/js/account.js"></script>
 </body>
 </html>

@@ -111,6 +111,20 @@ button { font-family: inherit; }
 }
 .site-header__nav a:hover { color: var(--text); }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  color: var(--text);
+}
+
 .cart-icon {
   position: relative;
   display: inline-flex;
@@ -395,11 +409,64 @@ main {
 
 /* チェックアウト */
 .checkout-summary { margin-bottom: 48px; }
-.checkout-summary h2, .checkout-form h2 {
+.checkout-summary h2, .checkout-form h2, .checkout-payment h2 {
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 20px;
 }
+.checkout-payment { margin-bottom: 48px; max-width: 480px; }
+
+/* 支払い方法選択(カード風ラジオ。素のradioは見せない) */
+.payment-method-options { display: grid; gap: 12px; }
+.payment-method-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.payment-method-option:hover { border-color: #ccc; }
+.payment-method-option.is-selected { border-color: #111; background: #fafafa; }
+.payment-method-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.payment-method-option__dot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1.5px solid #ccc;
+  position: relative;
+}
+.payment-method-option.is-selected .payment-method-option__dot { border-color: #111; }
+.payment-method-option.is-selected .payment-method-option__dot::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  background: #111;
+}
+.payment-method-option__body { display: flex; flex-direction: column; gap: 2px; }
+.payment-method-option__label { font-size: 14px; font-weight: 600; }
+.payment-method-option__desc { font-size: 12.5px; color: var(--text-muted); }
+
+.bank-transfer-info {
+  background: #fafafa;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.8;
+  margin-top: 16px;
+}
+.bank-transfer-info strong { font-weight: 600; }
 .checkout-form form {
   display: grid;
   gap: 20px;
@@ -502,6 +569,98 @@ main {
 .order-summary__number { font-weight: 600; font-size: 15px; margin-bottom: 16px; }
 .order-summary__items { margin-bottom: 16px; }
 .order-summary__shipping { color: var(--text-muted); font-size: 13px; }
+
+/* ログイン/会員登録 */
+.auth-page {
+  max-width: 400px;
+}
+.auth-page h1 {
+  font-size: 22px;
+  padding-top: 48px;
+  margin-bottom: 32px;
+  font-weight: 600;
+}
+.auth-form {
+  display: grid;
+  gap: 20px;
+}
+.auth-form label { display: flex; flex-direction: column; font-size: 13px; color: var(--text-muted); gap: 8px; }
+.auth-form .required { color: var(--danger); margin-left: 2px; }
+.auth-form__hint { font-size: 12px; color: var(--text-muted); }
+.auth-form button {
+  height: 52px;
+  padding: 0 32px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.auth-form button:hover { background: #333; }
+.auth-form button:disabled { background: #ccc; cursor: default; }
+.auth-switch { margin-top: 24px; font-size: 13px; color: var(--text-muted); }
+.auth-switch a { color: var(--text); font-weight: 600; text-decoration: underline; }
+
+/* マイページ */
+.account-page { max-width: 880px; }
+.account-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 48px;
+  margin-bottom: 32px;
+}
+.account-page__header h1 { font-size: 22px; font-weight: 600; padding-top: 0; margin-bottom: 0; }
+.account-page__user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.account-page h2 { font-size: 15px; font-weight: 600; margin-bottom: 20px; }
+.account-page__user button.button-link { height: 36px; margin-top: 0; padding: 0 16px; font-size: 12.5px; }
+
+.account-orders-table tr { cursor: pointer; }
+.account-order-detail td { background: #fafafa; padding: 20px; }
+.account-order-detail__items { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+.account-order-detail__items th, .account-order-detail__items td {
+  padding: 8px 10px 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.account-order-detail__shipping { list-style: none; padding: 0; margin: 0; font-size: 13px; color: var(--text-muted); }
+.account-order-detail__shipping li { padding: 4px 0; }
+
+/* 入金・配送状況バッジ(ストア用の控えめなデザイン) */
+.payment-badge, .fulfillment-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.payment-badge--paid { background: #e6f4f1; color: #0f766e; }
+.payment-badge--unpaid { background: #fef3c7; color: #92400e; }
+.payment-badge--failed { background: #fde8e8; color: #b91c1c; }
+.payment-badge--no_payment_required { background: #f5f5f5; color: #666; }
+.fulfillment-badge--pending { background: #f5f5f5; color: #666666; }
+.fulfillment-badge--processing { background: #e8f0fe; color: #1a56db; }
+.fulfillment-badge--shipped { background: #e6f4f1; color: #0f766e; }
+.fulfillment-badge--cancelled { background: #fde8e8; color: #b91c1c; }
+
+/* 注文照会 */
+.order-lookup-page { max-width: 480px; }
+.order-lookup-page h1 { font-size: 22px; padding-top: 48px; margin-bottom: 16px; font-weight: 600; }
+.order-lookup-page__desc { color: var(--text-muted); font-size: 13px; margin-bottom: 32px; }
+.order-lookup-result { margin-top: 40px; max-width: 640px; }
 
 /* Aboutページ */
 .about-page section { margin-bottom: 48px; }

@@ -72,10 +72,15 @@ function renderPage(product: {
     <a href="/">商品一覧</a>
     <a href="/about">About</a>
   </nav>
-  <a class="cart-icon" href="/cart" aria-label="カート">
-    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-    <span id="cart-badge" class="cart-icon__badge" hidden>0</span>
-  </a>
+  <div class="header-actions">
+    <a class="account-icon" id="account-icon-link" href="/login" aria-label="アカウント">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <a class="cart-icon" href="/cart" aria-label="カート">
+      <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span id="cart-badge" class="cart-icon__badge" hidden>0</span>
+    </a>
+  </div>
 </header>
 <main class="product-detail">
   <div class="gallery">
@@ -112,6 +117,7 @@ function renderPage(product: {
 <footer class="site-footer">
   <a href="/about">About</a>
   <a href="/legal">特定商取引法に基づく表記</a>
+  <a href="/order-lookup">注文状況の確認</a>
   <p>&copy; SAMPLE STORE</p>
 </footer>
 <script src="/js/cart.js"></script>

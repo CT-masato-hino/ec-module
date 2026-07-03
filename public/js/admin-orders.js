@@ -24,6 +24,23 @@ const PAYMENT_LABELS = {
   no_payment_required: '支払い不要',
 };
 
+const PAYMENT_METHOD_LABELS = {
+  stripe: 'カード決済',
+  bank_transfer: '銀行振込',
+};
+
+const EMAIL_TYPE_LABELS = {
+  order_confirmation: '注文確認',
+  payment_confirmed: '入金確認',
+  shipped: '発送通知',
+};
+
+const EMAIL_STATUS_LABELS = {
+  sent: '送信済み',
+  mocked: 'モック',
+  failed: '失敗',
+};
+
 function paymentBadgeHtml(status) {
   const label = PAYMENT_LABELS[status] || status;
   return `<span class="payment-badge payment-badge--${escapeHtml(status)}">${escapeHtml(label)}</span>`;
@@ -58,11 +75,29 @@ function renderDetailRow(order) {
     )
     .join('');
 
+  const paymentConfirmButtonHtml =
+    order.payment_status === 'unpaid'
+      ? `<button type="button" class="payment-confirm-button" data-order-id="${escapeHtml(order.id)}">入金を確認した</button>`
+      : '';
+
+  const emailLogsHtml = (order.email_logs || [])
+    .map(
+      (log) => `
+        <li>
+          <span class="email-log-badge email-log-badge--${escapeHtml(log.status)}">${escapeHtml(EMAIL_STATUS_LABELS[log.status] || log.status)}</span>
+          ${escapeHtml(EMAIL_TYPE_LABELS[log.email_type] || log.email_type)}
+          <span style="color:#aaa;">${escapeHtml(log.created_at)}</span>
+        </li>`
+    )
+    .join('');
+
   return `
     <tr class="order-detail-row" data-detail-for="${escapeHtml(order.id)}">
       <td colspan="6">
         <h3 style="margin-top:0;font-size:13px;">対応状況を変更</h3>
         <div class="fulfillment-status-buttons">${statusButtonsHtml}</div>
+        <h3 style="font-size:13px;">お支払い方法: ${escapeHtml(PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method)}</h3>
+        ${paymentConfirmButtonHtml}
         <h3 style="font-size:13px;">注文明細</h3>
         <table class="order-detail__items">
           <thead><tr><th>商品名</th><th>単価</th><th>数量</th><th>小計</th></tr></thead>
@@ -76,6 +111,8 @@ function renderDetailRow(order) {
           <li>電話番号: ${escapeHtml(order.shipping_phone)}</li>
           <li>備考: ${escapeHtml(order.note) || '(なし)'}</li>
         </ul>
+        <h3 style="font-size:13px;">送信メール</h3>
+        <ul class="order-detail__email-logs">${emailLogsHtml || '<li>送信履歴がありません</li>'}</ul>
       </td>
     </tr>`;
 }
@@ -147,18 +184,33 @@ function toggleDetail(order) {
 }
 
 tbody.addEventListener('click', async (e) => {
-  const target = e.target.closest('.fulfillment-status-button');
-  if (!target) return;
-  e.stopPropagation();
-  const orderId = target.dataset.orderId;
-  const fulfillmentStatus = target.dataset.fulfillmentStatus;
-  await fetch(`/api/admin/orders/${orderId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fulfillment_status: fulfillmentStatus }),
-  });
-  const formData = new FormData(form);
-  await loadOrders(Object.fromEntries(formData.entries()));
+  const statusButton = e.target.closest('.fulfillment-status-button');
+  if (statusButton) {
+    e.stopPropagation();
+    const orderId = statusButton.dataset.orderId;
+    const fulfillmentStatus = statusButton.dataset.fulfillmentStatus;
+    await fetch(`/api/admin/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fulfillment_status: fulfillmentStatus }),
+    });
+    const formData = new FormData(form);
+    await loadOrders(Object.fromEntries(formData.entries()));
+    return;
+  }
+
+  const paymentConfirmButton = e.target.closest('.payment-confirm-button');
+  if (paymentConfirmButton) {
+    e.stopPropagation();
+    const orderId = paymentConfirmButton.dataset.orderId;
+    await fetch(`/api/admin/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_status: 'paid' }),
+    });
+    const formData = new FormData(form);
+    await loadOrders(Object.fromEntries(formData.entries()));
+  }
 });
 
 statusChips.addEventListener('click', (e) => {

@@ -38,6 +38,8 @@ export interface OrderRow {
   shipping_phone: string | null;
   note: string | null;
   fulfillment_status: string;
+  user_id: string | null;
+  payment_method: string;
 }
 
 export interface OrderItemRow {
@@ -60,6 +62,8 @@ export interface CheckoutSessionRow {
   stripe_session_id: string | null;
   created_at: string;
   updated_at: string;
+  user_id: string | null;
+  payment_method: string;
 }
 
 export const FULFILLMENT_STATUSES = ['pending', 'processing', 'shipped', 'cancelled'] as const;
@@ -67,6 +71,14 @@ export type FulfillmentStatus = (typeof FULFILLMENT_STATUSES)[number];
 
 export function isFulfillmentStatus(value: unknown): value is FulfillmentStatus {
   return typeof value === 'string' && (FULFILLMENT_STATUSES as readonly string[]).includes(value);
+}
+
+// 管理画面から手動で更新可能な入金状態(paid=入金確認/failed=決済失敗として記録)
+export const MANUAL_PAYMENT_STATUSES = ['paid', 'failed'] as const;
+export type ManualPaymentStatus = (typeof MANUAL_PAYMENT_STATUSES)[number];
+
+export function isManualPaymentStatus(value: unknown): value is ManualPaymentStatus {
+  return typeof value === 'string' && (MANUAL_PAYMENT_STATUSES as readonly string[]).includes(value);
 }
 
 export function nowIso(): string {

@@ -1,2 +1,3 @@
 STRIPE_SECRET_KEY=sk_test_xxxxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxxxx
+RESEND_API_KEY=re_xxxxxx

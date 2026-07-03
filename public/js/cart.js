@@ -77,5 +77,20 @@ function updateCartBadge() {
   badge.hidden = count === 0;
 }
 
-document.addEventListener('DOMContentLoaded', updateCartBadge);
+async function updateAccountIcon() {
+  const link = document.getElementById('account-icon-link');
+  if (!link) return;
+  try {
+    const res = await fetch('/api/auth/me');
+    const data = await res.json();
+    link.href = data.user ? '/account' : '/login';
+  } catch {
+    // 取得失敗時はデフォルトの/loginのまま
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateCartBadge();
+  updateAccountIcon();
+});
 window.Cart = Cart;

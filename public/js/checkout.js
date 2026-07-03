@@ -6,6 +6,69 @@ const summaryEl = document.getElementById('checkout-summary-content');
 const form = document.getElementById('checkout-form');
 const submitButton = document.getElementById('submit-order-button');
 const errorEl = document.getElementById('checkout-error');
+const paymentSection = document.getElementById('checkout-payment-section');
+const paymentOptionsEl = document.getElementById('payment-method-options');
+
+const PAYMENT_METHOD_INFO = {
+  stripe: { label: 'カード決済', desc: 'クレジットカードで今すぐお支払いいただけます。' },
+  bank_transfer: { label: '銀行振込', desc: 'ご注文後に表示される振込先へお振込みください。入金確認後の発送となります。' },
+};
+
+let selectedPaymentMethod = null;
+
+async function loadPaymentMethods() {
+  try {
+    const res = await fetch('/api/config');
+    const data = await res.json();
+    const methods = Array.isArray(data.payment_methods) && data.payment_methods.length > 0 ? data.payment_methods : ['stripe'];
+    selectedPaymentMethod = methods[0];
+
+    if (methods.length <= 1) {
+      paymentSection.hidden = true;
+      return;
+    }
+
+    paymentSection.hidden = false;
+    paymentOptionsEl.innerHTML = methods
+      .map((method, i) => {
+        const info = PAYMENT_METHOD_INFO[method] || { label: method, desc: '' };
+        return `
+          <label class="payment-method-option${i === 0 ? ' is-selected' : ''}" data-method="${method}">
+            <input type="radio" name="payment_method" value="${method}" ${i === 0 ? 'checked' : ''}>
+            <span class="payment-method-option__dot"></span>
+            <span class="payment-method-option__body">
+              <span class="payment-method-option__label">${info.label}</span>
+              <span class="payment-method-option__desc">${info.desc}</span>
+            </span>
+          </label>`;
+      })
+      .join('');
+
+    paymentOptionsEl.addEventListener('change', (e) => {
+      if (e.target.name !== 'payment_method') return;
+      selectedPaymentMethod = e.target.value;
+      paymentOptionsEl.querySelectorAll('.payment-method-option').forEach((opt) => {
+        opt.classList.toggle('is-selected', opt.dataset.method === selectedPaymentMethod);
+      });
+    });
+  } catch {
+    selectedPaymentMethod = 'stripe';
+    paymentSection.hidden = true;
+  }
+}
+
+async function prefillEmailFromSession() {
+  try {
+    const res = await fetch('/api/auth/me');
+    const data = await res.json();
+    if (data.user && data.user.email) {
+      const emailInput = form.querySelector('input[name="email"]');
+      if (emailInput && !emailInput.value) emailInput.value = data.user.email;
+    }
+  } catch {
+    // ログイン状態取得に失敗しても購入フローは止めない
+  }
+}
 
 async function loadSummary() {
   let items = window.Cart.getItems();
@@ -86,6 +149,7 @@ form?.addEventListener('submit', async (e) => {
       body: JSON.stringify({
         items: items.map((item) => ({ product_id: item.product_id, quantity: item.quantity })),
         shipping,
+        payment_method: selectedPaymentMethod || 'stripe',
       }),
     });
 
@@ -114,3 +178,5 @@ form?.addEventListener('submit', async (e) => {
 });
 
 loadSummary();
+loadPaymentMethods();
+prefillEmailFromSession();
