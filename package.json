@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "init": "node scripts/init-local.mjs",
     "dev": "wrangler pages dev public --compatibility-date=2024-09-23",
     "deploy": "wrangler pages deploy public",
     "db:migrations:apply:local": "wrangler d1 migrations apply ec_db --local",

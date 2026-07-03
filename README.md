@@ -28,6 +28,18 @@ Cloudflare Pages + Pages Functions + D1 + Stripe Checkout構成のミニECサイ
 - 在庫管理(売り越し防止): 商品ごとにNULL(在庫管理しない)または数値の在庫数を設定可能。注文確定時に在庫を減算し、`/api/checkout`で在庫超過時は400 `insufficient_stock`を返す。ストアフロントはSOLD OUT表示・残数表示・数量セレクタの上限制御に対応
 - 注文完了ページの明細表示: `/checkout/success?session_id=...`で注文番号・購入商品・合計(税込・送料込み)・お届け先氏名を表示する公開API(`GET /api/orders/by-session/:session_id`、個人情報である住所・電話・メールは含まない)
 
+## AI駆動での使い方(Claude Code)
+
+このリポジトリはAIコーディングエージェントで扱う前提で整備してある(設計ルールは [AGENTS.md](AGENTS.md) / [CLAUDE.md](CLAUDE.md) に集約)。cloneして `claude` を起動すれば、以下のスラッシュコマンドで主要な運用がそのまま実行できる:
+
+| コマンド | やること |
+|---|---|
+| `/reset-demo` | サンプルデータ入りの初期状態にリフレッシュ(`npm run init` 相当+検証) |
+| `/clear-sample-data` | サンプル商品・テスト注文を削除して実運用の初期状態にする |
+| `/integrate-corporate-site` | 既存の静的コーポレートサイトへの組み込みを実行(ブランド差し替え→設定→検証→デプロイ準備→サイト側リンク追加までの実行可能プレイブック) |
+
+人間が直接使う場合も `npm run init` で同じ初期化ができる。
+
 ## すぐに動かす(ダミーキーのまま)
 
 このリポジトリはCloudflareアカウントもStripeアカウントも用意しなくても、ローカルで一通りの購入導線を確認できるようになっている。
