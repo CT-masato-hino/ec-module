@@ -13,4 +13,5 @@ export interface Env {
   EMAIL_FROM: string;
   PAYMENT_METHODS: string;
   BANK_TRANSFER_INFO: string;
+  R2_STORAGE_LIMIT_MB: string;
 }

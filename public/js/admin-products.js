@@ -258,7 +258,9 @@ async function uploadImage(file) {
           ? 'JPEG / PNG / WebP / GIF のみアップロードできます'
           : data.error === 'file_too_large'
             ? 'ファイルサイズは5MBまでです'
-            : `アップロードに失敗しました (${data.error || res.status})`;
+            : data.error === 'storage_limit_exceeded'
+              ? '画像ストレージの上限に達しています。不要な画像を削除するか上限設定(R2_STORAGE_LIMIT_MB)を見直してください'
+              : `アップロードに失敗しました (${data.error || res.status})`;
       showUploadStatus(message, true);
       return;
     }

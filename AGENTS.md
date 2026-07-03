@@ -126,6 +126,7 @@ node scripts/send-test-webhook.mjs <cs_...>
 | EMAIL_FROM | wrangler.toml [vars] | Resend実送信時のFromアドレス |
 | PAYMENT_METHODS | wrangler.toml [vars] | カンマ区切りで`stripe`/`bank_transfer`。デフォルトは両方 |
 | BANK_TRANSFER_INFO | wrangler.toml [vars] | 振込先情報の文字列(ダミー値。本番では実際の振込先に差し替える) |
+| R2_STORAGE_LIMIT_MB | wrangler.toml [vars] | 画像ストレージ上限(MB)。デフォルト8192。超過時はアップロードを400で拒否(課金防波堤) |
 
 ## 既存コーポレートサイトへの組み込み
 
