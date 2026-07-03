@@ -18,3 +18,7 @@ ADMIN_PASSWORD = "admin1234"
 EMAIL_FROM = "store@example.com"
 PAYMENT_METHODS = "stripe,bank_transfer"
 BANK_TRANSFER_INFO = "サンプル銀行 本店 普通 1234567 カ)サンプルストア"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "ec-images"

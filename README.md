@@ -21,7 +21,8 @@ Cloudflare Pages + Pages Functions + D1 + Stripe Checkout構成のミニECサイ
 - 会員機能(任意): メール/パスワードでの会員登録・ログイン・マイページ(`/account`)。ログインなしのゲスト購入も引き続き可能。マイページの注文履歴はログイン中ユーザーの`user_id`一致およびメールアドレス一致の注文を表示
 - 非会員向け注文照会(`/order-lookup`): 注文番号+メールアドレスの完全一致で注文詳細を確認できる(`POST /api/orders/lookup`)
 - メール通知(モック/実送信切替): 注文確認・入金確認・発送通知メールを送信。`RESEND_API_KEY`未設定時は実送信せず`email_logs`テーブルに記録するだけの「モックモード」で動作確認できる
-- 管理画面(Basic認証): 商品管理(公開/非公開・在庫数のインライン編集)、注文管理(検索・明細・配送先確認・送信メール履歴)
+- 管理画面(Basic認証): 商品管理(登録・編集・削除・公開/非公開・在庫数のインライン編集)、注文管理(検索・明細・配送先確認・送信メール履歴)
+- 商品画像のドラッグ&ドロップアップロード(Cloudflare R2): フォームに画像をドロップ(または選択)するとR2に保存されURLが自動入力される。JPEG/PNG/WebP/GIF、5MBまで。ローカルはwranglerがR2をシミュレートするためアカウント不要。URLの直接入力も引き続き可能
 - 注文の発送対応状況管理: 未対応/対応中/発送済み/キャンセルの4状態をワンクリックで変更(`PUT /api/admin/orders/:id`)。注文一覧にバッジ表示、対応状況別の絞り込みに対応
 - 入金状態管理(遅延決済・銀行振込対応): 注文は「入金(payment_status)」と「発送対応(fulfillment_status)」の2軸で管理。コンビニ払い・銀行振込などの遅延決済はStripeの`async_payment_succeeded/failed`イベントで 入金待ち→入金済み/決済失敗 に自動更新され、管理画面にバッジ表示・絞り込みできる。銀行振込は管理画面の「入金を確認した」ボタンで手動更新する。購入者側の完了ページにも入金待ちの案内・振込先を表示
 - 在庫管理(売り越し防止): 商品ごとにNULL(在庫管理しない)または数値の在庫数を設定可能。注文確定時に在庫を減算し、`/api/checkout`で在庫超過時は400 `insufficient_stock`を返す。ストアフロントはSOLD OUT表示・残数表示・数量セレクタの上限制御に対応
@@ -146,6 +147,7 @@ npx wrangler pages deploy public
 デプロイ後、Cloudflareダッシュボードで以下を設定する。
 
 - Pages プロジェクトに D1 (`DB`) バインディングを追加(本番/プレビュー環境それぞれ)
+- R2バケットを作成し(`npx wrangler r2 bucket create ec-images`)、Pages プロジェクトに R2 (`IMAGES`) バインディングを追加(商品画像アップロード用)
 - 環境変数(Secrets): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` をPages側に設定(本番では必ず実キーに切り替え、モック決済モードを無効化すること)
 - Stripeダッシュボードで Webhook エンドポイント `https://<your-domain>/api/webhooks/stripe` を登録し、`checkout.session.completed` / `checkout.session.expired` / `charge.refunded` を購読
 - Cloudflare Access で `/admin/*` と `/api/admin/*` を保護するポリシーを作成する。現状は簡易Basic認証(`ADMIN_USERNAME`/`ADMIN_PASSWORD`)のみで保護されているため、本番運用前にCloudflare Accessへ置き換えるか、`ADMIN_PASSWORD` を推測困難な値に変更しSecretとして再設定すること

@@ -139,6 +139,8 @@ function openEditForm(product) {
   createForm.elements.sort_order.value = product.sort_order ?? 0;
   createForm.elements.stock.value = product.stock === null || product.stock === undefined ? '' : product.stock;
   createForm.elements.is_active.value = product.is_active ? 'true' : 'false';
+  setImagePreview(product.image_url ?? '');
+  showUploadStatus('', false);
   createFormSection.classList.add('is-open');
   createFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -216,11 +218,84 @@ function startStockEdit(stockEl) {
   });
 }
 
+// 画像ドラッグ&ドロップアップロード
+const dropzone = document.getElementById('image-dropzone');
+const imageFileInput = document.getElementById('image-file-input');
+const imagePreview = document.getElementById('image-preview');
+const dropzonePlaceholder = document.getElementById('image-dropzone-placeholder');
+const uploadStatus = document.getElementById('image-upload-status');
+
+function setImagePreview(url) {
+  if (url) {
+    imagePreview.src = url;
+    imagePreview.hidden = false;
+    dropzonePlaceholder.hidden = true;
+  } else {
+    imagePreview.hidden = true;
+    dropzonePlaceholder.hidden = false;
+  }
+}
+
+function showUploadStatus(message, isError) {
+  uploadStatus.textContent = message;
+  uploadStatus.classList.toggle('is-error', Boolean(isError));
+  uploadStatus.hidden = !message;
+}
+
+async function uploadImage(file) {
+  showUploadStatus('アップロード中…', false);
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/api/admin/images', { method: 'POST', body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const message =
+        data.error === 'unsupported_type'
+          ? 'JPEG / PNG / WebP / GIF のみアップロードできます'
+          : data.error === 'file_too_large'
+            ? 'ファイルサイズは5MBまでです'
+            : `アップロードに失敗しました (${data.error || res.status})`;
+      showUploadStatus(message, true);
+      return;
+    }
+    createForm.elements.image_url.value = data.url;
+    setImagePreview(data.url);
+    showUploadStatus('アップロードしました', false);
+  } catch {
+    showUploadStatus('アップロードに失敗しました。通信環境をご確認ください', true);
+  }
+}
+
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.classList.add('is-dragover');
+});
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('is-dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('is-dragover');
+  const file = e.dataTransfer?.files?.[0];
+  if (file) uploadImage(file);
+});
+document.getElementById('select-image-button').addEventListener('click', () => imageFileInput.click());
+imageFileInput.addEventListener('change', () => {
+  const file = imageFileInput.files?.[0];
+  if (file) uploadImage(file);
+  imageFileInput.value = '';
+});
+// URL直接入力にもプレビューを追従させる
+createForm.elements.image_url.addEventListener('change', () => {
+  setImagePreview(createForm.elements.image_url.value.trim());
+});
+
 toggleCreateFormButton.addEventListener('click', () => {
   const willOpen = !createFormSection.classList.contains('is-open');
   if (willOpen) {
     createForm.reset();
     setFormMode('create');
+    setImagePreview('');
+    showUploadStatus('', false);
   }
   createFormSection.classList.toggle('is-open');
 });
@@ -228,6 +303,8 @@ cancelCreateFormButton.addEventListener('click', () => {
   createFormSection.classList.remove('is-open');
   createForm.reset();
   setFormMode('create');
+  setImagePreview('');
+  showUploadStatus('', false);
 });
 
 createForm.addEventListener('submit', async (e) => {
@@ -266,6 +343,8 @@ createForm.addEventListener('submit', async (e) => {
   createForm.reset();
   createFormSection.classList.remove('is-open');
   setFormMode('create');
+  setImagePreview('');
+  showUploadStatus('', false);
   loadProducts();
 });
 

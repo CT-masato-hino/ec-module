@@ -138,7 +138,7 @@ node scripts/send-test-webhook.mjs <cs_...>
 既存サイトのPagesプロジェクトに `functions/` と `public/` をマージする場合、以下を全て `/shop` プレフィックスに書き換える必要がある: HTML/JS内のfetch先(`/api/...`)とリンク、SSRが出すパス、`functions/` のディレクトリ構造自体、リダイレクトURL。工数と回 帰リスクが高いため、明確な理由がない限りパターンAを選ぶこと。
 
 どちらの場合も本番前チェックリスト:
-1. `npx wrangler d1 create <db名>` → `wrangler.toml` の `database_id` を実IDに差し替え → `npm run db:migrations:apply:remote`
+1. `npx wrangler d1 create <db名>` → `wrangler.toml` の `database_id` を実IDに差し替え → `npm run db:migrations:apply:remote`。あわせて `npx wrangler r2 bucket create ec-images` でR2バケットを作成し、PagesにR2(`IMAGES`)バインディングを追加(商品画像アップロード用。ローカルはwranglerがシミュレートする)
 2. Pagesプロジェクトに D1(DB)バインディングとSecrets(実Stripeキー)を設定 → モック決済モードが自動で無効化される
 3. Stripeダッシュボードで Webhookエンドポイント `https://<domain>/api/webhooks/stripe` を登録(`checkout.session.completed` / `async_payment_succeeded` / `async_payment_failed` / `expired`)。**Stripe側での商品・Price作成は不要**(Checkoutは`price_data`でD1の価格を動的に渡す。価格の正はD1の`price_display`のみ)
 4. `/admin/*` と `/api/admin/*` を Cloudflare Access で保護(Basic認証は開発用の簡易保護でしかない)
