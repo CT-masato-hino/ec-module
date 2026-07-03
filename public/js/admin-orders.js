@@ -17,6 +17,18 @@ const FULFILLMENT_LABELS = {
   cancelled: 'キャンセル',
 };
 
+const PAYMENT_LABELS = {
+  paid: '入金済み',
+  unpaid: '入金待ち',
+  failed: '決済失敗',
+  no_payment_required: '支払い不要',
+};
+
+function paymentBadgeHtml(status) {
+  const label = PAYMENT_LABELS[status] || status;
+  return `<span class="payment-badge payment-badge--${escapeHtml(status)}">${escapeHtml(label)}</span>`;
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -112,7 +124,7 @@ function renderOrders() {
       <td>${escapeHtml(order.ordered_at)}</td>
       <td>${escapeHtml(order.product_name)}</td>
       <td>¥${Number(order.amount_total).toLocaleString('ja-JP')}</td>
-      <td>${escapeHtml(order.payment_status)}</td>
+      <td>${paymentBadgeHtml(order.payment_status)}</td>
       <td>${fulfillmentBadgeHtml(order.fulfillment_status)}</td>
       <td>${escapeHtml(order.customer_email)}</td>
     `;

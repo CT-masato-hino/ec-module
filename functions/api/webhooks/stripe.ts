@@ -99,6 +99,26 @@ async function handleCheckoutCompleted(db: D1Database, session: Stripe.Checkout.
     .run();
 }
 
+/**
+ * コンビニ払い・銀行振込などの遅延決済では、checkout.session.completed(注文確定・未入金)の後に
+ * async_payment_succeeded / async_payment_failed で入金結果が届くため、注文の入金状態を更新する。
+ */
+async function updatePaymentStatus(db: D1Database, stripeSessionId: string, paymentStatus: string): Promise<void> {
+  await db
+    .prepare(`UPDATE orders SET payment_status = ?, updated_at = ? WHERE stripe_session_id = ?`)
+    .bind(paymentStatus, nowIso(), stripeSessionId)
+    .run();
+}
+
+async function markCheckoutSessionExpired(db: D1Database, session: Stripe.Checkout.Session): Promise<void> {
+  const checkoutSessionId = session.metadata?.checkout_session_id;
+  if (!checkoutSessionId) return;
+  await db
+    .prepare(`UPDATE checkout_sessions SET status = 'expired', updated_at = ? WHERE id = ? AND status = 'pending'`)
+    .bind(nowIso(), checkoutSessionId)
+    .run();
+}
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const signature = context.request.headers.get('Stripe-Signature');
   const rawBody = await context.request.text();
@@ -130,9 +150,24 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         await handleCheckoutCompleted(context.env.DB, session);
         break;
       }
-      case 'checkout.session.expired':
-        // ログのみで注文は作成しない
+      case 'checkout.session.async_payment_succeeded': {
+        // 遅延決済(コンビニ払い・銀行振込等)の入金完了
+        const session = event.data.object as Stripe.Checkout.Session;
+        await updatePaymentStatus(context.env.DB, session.id, 'paid');
         break;
+      }
+      case 'checkout.session.async_payment_failed': {
+        // 遅延決済の期限切れ・入金失敗
+        const session = event.data.object as Stripe.Checkout.Session;
+        await updatePaymentStatus(context.env.DB, session.id, 'failed');
+        break;
+      }
+      case 'checkout.session.expired': {
+        // 決済されずセッション期限切れ。仮注文を expired にして注文対象から外す
+        const session = event.data.object as Stripe.Checkout.Session;
+        await markCheckoutSessionExpired(context.env.DB, session);
+        break;
+      }
       case 'charge.refunded':
         // 初期実装では未対応(Stripe管理画面で対応)
         break;

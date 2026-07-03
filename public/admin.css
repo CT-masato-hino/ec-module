@@ -522,3 +522,17 @@ table.admin-table img.admin-thumb { width: 40px; height: 40px; object-fit: cover
   transition: background 0.15s ease;
 }
 .admin-button-danger:hover { background: #991b1b; }
+
+/* 入金状態バッジ */
+.payment-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.payment-badge--paid { background: #e6f4f1; color: #0f766e; }
+.payment-badge--unpaid { background: #fef3c7; color: #92400e; }
+.payment-badge--failed { background: #fde8e8; color: #b91c1c; }
+.payment-badge--no_payment_required { background: #f5f5f5; color: #666; }

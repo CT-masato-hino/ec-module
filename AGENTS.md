@@ -65,6 +65,10 @@ node scripts/send-test-webhook.mjs <cs_...>
 ```
 
 同一イベントID再送→`duplicate:true`、別イベントID・同一Stripeセッション→注文/在庫が増えない、不正署名→400、まで確認すること。
+
+遅延決済(コンビニ払い・銀行振込等)のテスト: `completed`(unpaid)→`async_payment_succeeded`(paid)/`async_payment_failed`(failed)の順でスクリプトから送ると、注文の入金状態(orders.payment_status)が 入金待ち→入金済み/決済失敗 と遷移する。注文には2軸のステータスがある:
+- `payment_status`(入金・Stripe起点): paid=入金済み / unpaid=入金待ち / failed=決済失敗。Webhookが更新する
+- `fulfillment_status`(発送対応・店舗起点): pending/processing/shipped/cancelled。管理画面から変更する
 **実キーでのみ検証可能な残り**: `stripe.checkout.sessions.create` の実APIコールと、Stripeからの実イベント配送(`stripe listen`)。実キー設定後にREADMEの手順で確認する。
 
 ## 動作確認フロー(モック決済)

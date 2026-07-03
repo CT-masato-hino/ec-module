@@ -6,8 +6,12 @@
 // 使い方:
 //   1. npm run dev でサーバーを起動しておく
 //   2. POST /api/checkout で checkout_sessions を作り、返ってきたURLの session_id を控える
-//   3. node scripts/send-test-webhook.mjs <checkout_session_id> [amount_total] [stripe_session_id] [event_id]
+//   3. node scripts/send-test-webhook.mjs <checkout_session_id> [amount_total] [stripe_session_id] [event_id] [payment_status] [event_type]
 //      (stripe_session_id / event_id を固定して再送すると冪等性テストができる)
+//
+// 遅延決済(コンビニ払い等)のテスト例:
+//   node scripts/send-test-webhook.mjs <cs_id> 3980 cs_x evt_1 unpaid checkout.session.completed
+//   node scripts/send-test-webhook.mjs <cs_id> 3980 cs_x evt_2 paid checkout.session.async_payment_succeeded
 
 import { readFileSync } from 'node:fs';
 import { createHmac, randomUUID } from 'node:crypto';
@@ -24,6 +28,8 @@ if (!checkoutSessionId) {
 const amountTotal = Number(process.argv[3] ?? 3980);
 const stripeSessionId = process.argv[4] ?? `cs_stripe_test_${randomUUID()}`;
 const eventId = process.argv[5] ?? `evt_test_${randomUUID()}`;
+const paymentStatus = process.argv[6] ?? 'paid';
+const eventType = process.argv[7] ?? 'checkout.session.completed';
 
 // .dev.vars から STRIPE_WEBHOOK_SECRET を読む
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -39,7 +45,7 @@ const event = {
   id: eventId,
   object: 'event',
   api_version: '2025-02-24.acacia',
-  type: 'checkout.session.completed',
+  type: eventType,
   created: Math.floor(Date.now() / 1000),
   data: {
     object: {
@@ -47,7 +53,7 @@ const event = {
       object: 'checkout.session',
       amount_total: amountTotal,
       currency: 'jpy',
-      payment_status: 'paid',
+      payment_status: paymentStatus,
       customer_details: { email: 'webhook-test@example.com' },
       metadata: { checkout_session_id: checkoutSessionId },
     },

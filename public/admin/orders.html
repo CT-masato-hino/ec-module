@@ -38,8 +38,9 @@
         <label style="font-size:12.5px;color:var(--admin-text-muted);">入金</label>
         <div class="admin-status-chips" id="status-chips">
           <button type="button" class="admin-status-chip is-active" data-status="">全て</button>
-          <button type="button" class="admin-status-chip" data-status="paid">paid</button>
-          <button type="button" class="admin-status-chip" data-status="unpaid">unpaid</button>
+          <button type="button" class="admin-status-chip" data-status="paid">入金済み</button>
+          <button type="button" class="admin-status-chip" data-status="unpaid">入金待ち</button>
+          <button type="button" class="admin-status-chip" data-status="failed">決済失敗</button>
         </div>
         <input type="hidden" name="payment_status" value="">
       </div>
@@ -67,7 +68,7 @@
             <th>注文日時</th>
             <th>商品名</th>
             <th>金額</th>
-            <th>決済状態</th>
+            <th>入金</th>
             <th>対応状況</th>
             <th>メール</th>
           </tr>

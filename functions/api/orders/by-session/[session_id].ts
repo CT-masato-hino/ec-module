@@ -25,6 +25,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       amount_total: order.amount_total,
       currency: order.currency,
       ordered_at: order.ordered_at,
+      payment_status: order.payment_status,
       shipping_name: order.shipping_name,
       items: items.map((item) => ({
         product_name: item.product_name,

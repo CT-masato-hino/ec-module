@@ -37,6 +37,7 @@ async function loadOrderSummary() {
       </table>
       <p class="cart-total">合計 &yen;${Number(order.amount_total).toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>
       ${order.shipping_name ? `<p class="order-summary__shipping">お届け先: ${escapeHtml(order.shipping_name)}様</p>` : ''}
+      ${order.payment_status === 'unpaid' ? '<p class="order-summary__pending-payment">お支払いはまだ完了していません。ご入金が確認され次第、発送の準備を開始します。</p>' : ''}
     `;
     summaryEl.hidden = false;
     if (defaultMessageEl) defaultMessageEl.hidden = true;

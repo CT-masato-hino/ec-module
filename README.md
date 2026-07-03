@@ -17,6 +17,7 @@ Cloudflare Pages + Pages Functions + D1 + Stripe Checkout構成のミニECサイ
 - 商品一覧・詳細(SSR)、カート、配送先入力、Stripe Checkout(モック決済モード対応)
 - 管理画面(Basic認証): 商品管理(公開/非公開・在庫数のインライン編集)、注文管理(検索・明細・配送先確認)
 - 注文の発送対応状況管理: 未対応/対応中/発送済み/キャンセルの4状態をワンクリックで変更(`PUT /api/admin/orders/:id`)。注文一覧にバッジ表示、対応状況別の絞り込みに対応
+- 入金状態管理(遅延決済対応): 注文は「入金(payment_status)」と「発送対応(fulfillment_status)」の2軸で管理。コンビニ払い・銀行振込などの遅延決済はStripeの`async_payment_succeeded/failed`イベントで 入金待ち→入金済み/決済失敗 に自動更新され、管理画面にバッジ表示・絞り込みできる。購入者側の完了ページにも入金待ちの案内を表示
 - 在庫管理(売り越し防止): 商品ごとにNULL(在庫管理しない)または数値の在庫数を設定可能。注文確定時に在庫を減算し、`/api/checkout`で在庫超過時は400 `insufficient_stock`を返す。ストアフロントはSOLD OUT表示・残数表示・数量セレクタの上限制御に対応
 - 注文完了ページの明細表示: `/checkout/success?session_id=...`で注文番号・購入商品・合計(税込・送料込み)・お届け先氏名を表示する公開API(`GET /api/orders/by-session/:session_id`、個人情報である住所・電話・メールは含まない)
 
