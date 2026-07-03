@@ -8,7 +8,9 @@ const ALLOWED_TYPES: Record<string, string> = {
   'image/gif': 'gif',
 };
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+// スマホ写真の原寸(iPhoneのJPEG/HEICは3〜8MBが普通)を受け付けられる上限。
+// 通常は管理画面側で長辺1600pxに自動リサイズされてから届くため、実際の保存サイズは数百KB程度になる
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const DEFAULT_STORAGE_LIMIT_MB = 1024; // 小規模EC想定の仮の上限(1GB。R2無料枠10GBの1/10)
 
 function getStorageLimitBytes(env: Env): number {

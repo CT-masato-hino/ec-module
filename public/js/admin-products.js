@@ -245,7 +245,35 @@ function showUploadStatus(message, isError) {
   uploadStatus.hidden = !message;
 }
 
-async function uploadImage(file) {
+// スマホ写真(iPhoneで3〜8MB)をそのまま投げても軽くなるよう、アップロード前にブラウザ側でリサイズする。
+// 商品画像には長辺1600pxで十分。GIF(アニメーション)とデコードできない形式はそのまま送る
+const RESIZE_MAX_EDGE = 1600;
+const RESIZE_TRIGGER_BYTES = 500 * 1024;
+
+async function prepareImageForUpload(file) {
+  if (file.type === 'image/gif' || file.size <= RESIZE_TRIGGER_BYTES) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, RESIZE_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+    if (!blob || blob.size >= file.size) return file; // 圧縮効果がなければ元を使う
+    const baseName = file.name.replace(/\.[^.]+$/, '') || 'image';
+    return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' });
+  } catch {
+    return file; // デコード不可(HEIC等)はサーバー側の判定に任せる
+  }
+}
+
+async function uploadImage(rawFile) {
+  showUploadStatus('画像を圧縮しています…', false);
+  const file = await prepareImageForUpload(rawFile);
   showUploadStatus('アップロード中…', false);
   const fd = new FormData();
   fd.append('file', file);
@@ -257,7 +285,7 @@ async function uploadImage(file) {
         data.error === 'unsupported_type'
           ? 'JPEG / PNG / WebP / GIF のみアップロードできます'
           : data.error === 'file_too_large'
-            ? 'ファイルサイズは5MBまでです'
+            ? 'ファイルサイズは10MBまでです'
             : data.error === 'storage_limit_exceeded'
               ? '画像ストレージの上限に達しています。不要な画像を削除するか上限設定(R2_STORAGE_LIMIT_MB)を見直してください'
               : `アップロードに失敗しました (${data.error || res.status})`;
