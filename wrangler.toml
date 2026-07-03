@@ -18,8 +18,11 @@ ADMIN_PASSWORD = "admin1234"
 EMAIL_FROM = "store@example.com"
 PAYMENT_METHODS = "stripe,bank_transfer"
 BANK_TRANSFER_INFO = "サンプル銀行 本店 普通 1234567 カ)サンプルストア"
-# 画像ストレージの上限(MB)。超過するとアップロードを拒否する(R2無料枠10GBの手前で止める課金防波堤)
-R2_STORAGE_LIMIT_MB = "8192"
+# ---- 小規模EC想定の上限(課金防波堤・仮の値。必要になったら引き上げる) ----
+# 画像ストレージの上限(MB)。超過するとアップロードを拒否(500KB画像×約2,000枚相当。R2無料枠10GBの1/10)
+R2_STORAGE_LIMIT_MB = "1024"
+# 商品数の上限。超過すると商品登録を拒否
+MAX_PRODUCTS = "100"
 
 [[r2_buckets]]
 binding = "IMAGES"

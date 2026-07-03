@@ -32,6 +32,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return Response.json({ error: 'slug_name_price_display_required' }, { status: 400 });
   }
 
+  // 商品数の上限(小規模EC想定の仮の値。MAX_PRODUCTSで変更可能)
+  const parsedMax = parseInt(context.env.MAX_PRODUCTS, 10);
+  const maxProducts = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : 100;
+  const countRow = await context.env.DB.prepare('SELECT COUNT(*) AS c FROM products').first<{ c: number }>();
+  if ((countRow?.c ?? 0) >= maxProducts) {
+    return Response.json({ error: 'product_limit_exceeded', max_products: maxProducts }, { status: 400 });
+  }
+
   const now = nowIso();
   const id = newId('prod');
 

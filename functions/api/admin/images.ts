@@ -9,7 +9,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 };
 
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
-const DEFAULT_STORAGE_LIMIT_MB = 8192; // R2無料枠(10GB)の手前で止めるデフォルト値
+const DEFAULT_STORAGE_LIMIT_MB = 1024; // 小規模EC想定の仮の上限(1GB。R2無料枠10GBの1/10)
 
 function getStorageLimitBytes(env: Env): number {
   const mb = parseFloat(env.R2_STORAGE_LIMIT_MB);

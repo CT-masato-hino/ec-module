@@ -342,7 +342,10 @@ createForm.addEventListener('submit', async (e) => {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    createError.textContent = `${editingProductId ? '保存' : '登録'}に失敗しました: ${data.error || res.status}`;
+    createError.textContent =
+      data.error === 'product_limit_exceeded'
+        ? `商品数の上限(${data.max_products}点)に達しています。不要な商品を削除するか、上限設定(MAX_PRODUCTS)を見直してください`
+        : `${editingProductId ? '保存' : '登録'}に失敗しました: ${data.error || res.status}`;
     createError.hidden = false;
     return;
   }
