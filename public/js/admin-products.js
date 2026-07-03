@@ -42,7 +42,12 @@ function renderProducts(products) {
         </button>
       </td>
       <td>
-        <button type="button" class="admin-icon-button delete-product" data-id="${p.id}" data-name="${escapeHtml(p.name)}" aria-label="削除">
+        <button type="button" class="admin-icon-button edit-product" data-id="${p.id}" aria-label="編集">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+      </td>
+      <td>
+        <button type="button" class="admin-icon-button admin-icon-button--danger delete-product" data-id="${p.id}" data-name="${escapeHtml(p.name)}" aria-label="削除">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         </button>
       </td>
@@ -90,6 +95,13 @@ tbody.addEventListener('click', async (e) => {
     return;
   }
 
+  const editTarget = e.target.closest('.edit-product');
+  if (editTarget) {
+    const product = allProducts.find((p) => p.id === editTarget.dataset.id);
+    if (product) openEditForm(product);
+    return;
+  }
+
   const deleteTarget = e.target.closest('.delete-product');
   if (deleteTarget) {
     openDeleteModal(deleteTarget.dataset.id, deleteTarget.dataset.name);
@@ -101,6 +113,36 @@ tbody.addEventListener('click', async (e) => {
     startStockEdit(stockTarget);
   }
 });
+
+// フォームの登録/編集モード切り替え
+const formTitle = document.getElementById('form-title');
+const formSubmit = document.getElementById('form-submit');
+let editingProductId = null;
+
+function setFormMode(mode) {
+  const isEdit = mode === 'edit';
+  formTitle.textContent = isEdit ? '商品を編集' : '商品を登録';
+  formSubmit.textContent = isEdit ? '保存する' : '登録する';
+  createForm.elements.slug.disabled = isEdit; // スラッグはURLなので編集不可
+  if (!isEdit) editingProductId = null;
+}
+
+function openEditForm(product) {
+  editingProductId = product.id;
+  setFormMode('edit');
+  createForm.elements.name.value = product.name ?? '';
+  createForm.elements.slug.value = product.slug ?? '';
+  createForm.elements.image_url.value = product.image_url ?? '';
+  createForm.elements.description.value = product.description ?? '';
+  createForm.elements.price_display.value = product.price_display ?? '';
+  createForm.elements.currency.value = product.currency ?? 'JPY';
+  createForm.elements.stripe_price_id.value = product.stripe_price_id ?? '';
+  createForm.elements.sort_order.value = product.sort_order ?? 0;
+  createForm.elements.stock.value = product.stock === null || product.stock === undefined ? '' : product.stock;
+  createForm.elements.is_active.value = product.is_active ? 'true' : 'false';
+  createFormSection.classList.add('is-open');
+  createFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 // 削除確認モーダル
 const deleteModal = document.getElementById('delete-modal');
@@ -176,11 +218,17 @@ function startStockEdit(stockEl) {
 }
 
 toggleCreateFormButton.addEventListener('click', () => {
+  const willOpen = !createFormSection.classList.contains('is-open');
+  if (willOpen) {
+    createForm.reset();
+    setFormMode('create');
+  }
   createFormSection.classList.toggle('is-open');
 });
 cancelCreateFormButton.addEventListener('click', () => {
   createFormSection.classList.remove('is-open');
   createForm.reset();
+  setFormMode('create');
 });
 
 createForm.addEventListener('submit', async (e) => {
@@ -193,21 +241,32 @@ createForm.addEventListener('submit', async (e) => {
   body.is_active = body.is_active === 'true';
   body.stock = body.stock === '' || body.stock === undefined ? null : Number(body.stock);
 
-  const res = await fetch('/api/admin/products', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let res;
+  if (editingProductId) {
+    delete body.slug; // スラッグは変更不可
+    res = await fetch(`/api/admin/products/${editingProductId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } else {
+    res = await fetch('/api/admin/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    createError.textContent = `登録に失敗しました: ${data.error || res.status}`;
+    createError.textContent = `${editingProductId ? '保存' : '登録'}に失敗しました: ${data.error || res.status}`;
     createError.hidden = false;
     return;
   }
 
   createForm.reset();
   createFormSection.classList.remove('is-open');
+  setFormMode('create');
   loadProducts();
 });
 

@@ -490,7 +490,7 @@ table.admin-table img.admin-thumb { width: 40px; height: 40px; object-fit: cover
   .admin-content { padding: 20px; }
 }
 
-/* 削除ボタン(テーブル行内のゴミ箱アイコン) */
+/* テーブル行内のアイコンボタン(編集・削除など) */
 .admin-icon-button {
   display: inline-flex;
   align-items: center;
@@ -504,7 +504,8 @@ table.admin-table img.admin-thumb { width: 40px; height: 40px; object-fit: cover
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.admin-icon-button:hover { background: #fde8e8; color: #b91c1c; }
+.admin-icon-button:hover { background: #f0f4f5; color: var(--admin-accent); }
+.admin-icon-button--danger:hover { background: #fde8e8; color: #b91c1c; }
 .admin-icon-button .icon { width: 16px; height: 16px; }
 
 /* 危険操作ボタン(モーダル内の削除実行) */

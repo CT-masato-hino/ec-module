@@ -29,10 +29,10 @@
   </div>
 
   <div class="admin-card admin-form-section" id="create-form-section">
-    <h2>商品を登録</h2>
+    <h2 id="form-title">商品を登録</h2>
     <form class="admin-form-grid" id="create-form">
       <label>商品名<input type="text" name="name" required></label>
-      <label>スラッグ(URL用)<input type="text" name="slug" required placeholder="sample-product"></label>
+      <label>スラッグ(URL用・編集時は変更不可)<input type="text" name="slug" required placeholder="sample-product"></label>
       <label>商品画像URL<input type="text" name="image_url" placeholder="/images/placeholder-1.svg"></label>
       <label>商品説明<textarea name="description" rows="3"></textarea></label>
       <label>価格(税込)<input type="number" name="price_display" required></label>
@@ -47,7 +47,7 @@
         </select>
       </label>
       <div class="admin-form-actions">
-        <button type="submit" class="admin-button-primary">登録する</button>
+        <button type="submit" id="form-submit" class="admin-button-primary">登録する</button>
         <button type="button" id="cancel-create-form" class="admin-button-secondary">キャンセル</button>
       </div>
       <p id="create-error" class="admin-error" hidden></p>
@@ -67,6 +67,7 @@
             <th>価格</th>
             <th>在庫</th>
             <th>公開状態</th>
+            <th>編集</th>
             <th>削除</th>
           </tr>
         </thead>

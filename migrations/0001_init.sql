@@ -131,3 +131,38 @@ INSERT INTO products (
   '["/images/placeholder-2.svg","/images/placeholder-3.svg","/images/placeholder-1.svg"]',
   10
 );
+
+-- 初期データ: サンプル注文(管理画面の注文管理の動きを確認できるよう1件入れてある。
+-- 実運用開始時は scripts/clear-sample-data.sql で商品ごと削除される)
+INSERT INTO orders (
+  id, stripe_session_id, stripe_event_id, product_id, product_name,
+  amount_total, currency, payment_status, customer_email,
+  ordered_at, created_at, updated_at,
+  shipping_name, shipping_postal_code, shipping_address, shipping_phone, note,
+  fulfillment_status
+) VALUES (
+  'order_sample_001',
+  'mock_sample_session_001',
+  NULL,
+  'prod_001',
+  'サンプルアイテム A 他1件',
+  10960,
+  'JPY',
+  'paid',
+  'sample-customer@example.com',
+  -- アプリが書き込むISO 8601形式(T区切り)に合わせる。datetime('now')はスペース区切りになり
+  -- ordered_atの範囲比較(本日サマリー・日付絞り込み)に一致しなくなるため使わない
+  strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+  strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+  strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+  '山田 花子',
+  '150-0001',
+  '東京都渋谷区神宮前1-2-3 サンプルマンション101',
+  '090-0000-0000',
+  '置き配を希望します。',
+  'pending'
+);
+
+INSERT INTO order_items (id, order_id, product_id, product_name, unit_price, quantity, subtotal, created_at) VALUES
+('item_sample_001', 'order_sample_001', 'prod_001', 'サンプルアイテム A', 3980, 1, 3980, datetime('now')),
+('item_sample_002', 'order_sample_001', 'prod_002', 'サンプルアイテム B', 6980, 1, 6980, datetime('now'));
