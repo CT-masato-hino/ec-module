@@ -25,15 +25,15 @@
 </header>
 <main class="auth-page">
   <h1>会員登録</h1>
-  <form id="register-form" class="auth-form">
+  <form id="register-form" class="auth-form" novalidate>
     <label>お名前
       <input type="text" name="name" autocomplete="name">
     </label>
     <label>メールアドレス<span class="required">*</span>
-      <input type="email" name="email" required autocomplete="email">
+      <input type="email" name="email" autocomplete="email">
     </label>
     <label>パスワード<span class="required">*</span>
-      <input type="password" name="password" required minlength="8" autocomplete="new-password">
+      <input type="password" name="password" autocomplete="new-password">
       <span class="auth-form__hint">8文字以上で入力してください</span>
     </label>
     <button type="submit" id="register-button">登録する</button>
@@ -48,6 +48,7 @@
   <p>&copy; SAMPLE STORE</p>
 </footer>
 <script src="/js/cart.js"></script>
+<script src="/js/form-validation.js"></script>
 <script src="/js/register.js"></script>
 </body>
 </html>

@@ -361,6 +361,18 @@ main {
 }
 .error { color: var(--danger); font-size: 13px; }
 
+/* フィールド単位バリデーション */
+.field-error { color: #c62828; font-size: 13px; margin: 4px 0 0; }
+.field-warning { color: #92400e; font-size: 13px; margin: 4px 0 0; }
+.field-hint { color: #0f766e; font-size: 13px; margin: 4px 0 0; }
+input.is-invalid, textarea.is-invalid {
+  border-color: #c62828;
+}
+input.is-invalid:focus, textarea.is-invalid:focus {
+  border-color: #c62828;
+  box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15);
+}
+
 /* カートページ */
 .cart-page h1, .checkout-page h1, .about-page h1, .legal-page h1 {
   font-size: 22px;

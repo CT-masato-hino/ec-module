@@ -2,10 +2,24 @@ const form = document.getElementById('login-form');
 const submitButton = document.getElementById('login-button');
 const errorEl = document.getElementById('login-error');
 
+const LOGIN_RULES = {
+  email: ['required', 'email'],
+  password: ['required'],
+};
+
+const validation = window.FormValidation ? window.FormValidation.attachValidation(form, LOGIN_RULES) : null;
+
 form?.addEventListener('submit', async (e) => {
   e.preventDefault();
   errorEl.hidden = true;
+
+  if (validation && !validation.validateAll()) {
+    return;
+  }
+
   submitButton.disabled = true;
+  const originalButtonLabel = submitButton.textContent;
+  submitButton.textContent = '送信中…';
 
   const formData = new FormData(form);
   const email = formData.get('email');
@@ -28,5 +42,6 @@ form?.addEventListener('submit', async (e) => {
     errorEl.textContent = err instanceof Error ? err.message : 'ログインに失敗しました。';
     errorEl.hidden = false;
     submitButton.disabled = false;
+    submitButton.textContent = originalButtonLabel;
   }
 });

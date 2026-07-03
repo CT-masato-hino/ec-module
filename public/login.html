@@ -25,12 +25,12 @@
 </header>
 <main class="auth-page">
   <h1>ログイン</h1>
-  <form id="login-form" class="auth-form">
+  <form id="login-form" class="auth-form" novalidate>
     <label>メールアドレス<span class="required">*</span>
-      <input type="email" name="email" required autocomplete="email">
+      <input type="email" name="email" autocomplete="email">
     </label>
     <label>パスワード<span class="required">*</span>
-      <input type="password" name="password" required autocomplete="current-password">
+      <input type="password" name="password" autocomplete="current-password">
     </label>
     <button type="submit" id="login-button">ログイン</button>
     <p id="login-error" class="error" hidden></p>
@@ -44,6 +44,7 @@
   <p>&copy; SAMPLE STORE</p>
 </footer>
 <script src="/js/cart.js"></script>
+<script src="/js/form-validation.js"></script>
 <script src="/js/login.js"></script>
 </body>
 </html>

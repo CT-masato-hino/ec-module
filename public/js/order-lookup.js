@@ -31,11 +31,25 @@ const submitButton = document.getElementById('lookup-button');
 const errorEl = document.getElementById('lookup-error');
 const resultEl = document.getElementById('lookup-result');
 
+const LOOKUP_RULES = {
+  order_id: ['required'],
+  email: ['required', 'email'],
+};
+
+const validation = window.FormValidation ? window.FormValidation.attachValidation(form, LOOKUP_RULES) : null;
+
 form?.addEventListener('submit', async (e) => {
   e.preventDefault();
   errorEl.hidden = true;
   resultEl.hidden = true;
+
+  if (validation && !validation.validateAll()) {
+    return;
+  }
+
   submitButton.disabled = true;
+  const originalButtonLabel = submitButton.textContent;
+  submitButton.textContent = '送信中…';
 
   const formData = new FormData(form);
   const orderId = formData.get('order_id');
@@ -100,5 +114,6 @@ form?.addEventListener('submit', async (e) => {
     errorEl.hidden = false;
   } finally {
     submitButton.disabled = false;
+    submitButton.textContent = originalButtonLabel;
   }
 });

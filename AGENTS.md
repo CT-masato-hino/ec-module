@@ -25,7 +25,7 @@ public/            静的アセット(Pages配信ルート)
   order-lookup.html  非会員向け注文照会(注文番号+メールで検索)
   about.html legal.html
   admin/           管理画面(ホーム/商品/注文)— BASE風UI
-  js/              フロントJS(cart.js=カート共通モジュール+ヘッダーのアカウントアイコン切替 ほか)
+  js/              フロントJS(cart.js=カート共通モジュール+ヘッダーのアカウントアイコン切替、form-validation.js=フォームのフィールド単位バリデーション共通基盤 ほか)
   styles.css       ストアフロントCSS / admin.css 管理画面CSS
 functions/         Pages Functions(TypeScript, strict)
   products/[slug].ts        商品詳細SSR
@@ -112,6 +112,7 @@ node scripts/send-test-webhook.mjs <cs_...>
 - **UI品質**(ユーザーから「チープ」と強い指摘を受けた経緯がある):
   - 絵文字をUIに使わない。アイコンは細線インラインSVG(Lucide風)のみ
   - ネイティブのフォームコントロールをそのまま見せない(統一スタイル済み。新規UIも合わせる)
+  - フォームは `novalidate` + フィールド単位のインラインエラー表示(`public/js/form-validation.js` の `attachValidation`)が規約。ブラウザ標準のバリデーションポップアップや `alert()` は使わない。新規フォームもこの基盤に乗せる
   - ストアは白背景×黒CTA、管理画面はティール(#1e8b93)のBASE風。8pxグリッド、タイポグラフィスケール13〜32px
   - `styles.css` 冒頭の `[hidden]{display:none !important}` は表示バグ対策。消さない
 

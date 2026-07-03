@@ -57,6 +57,103 @@ async function loadPaymentMethods() {
   }
 }
 
+const CHECKOUT_RULES = {
+  name: ['required'],
+  email: ['required', 'email'],
+  postal_code: ['required', 'postalCode'],
+  address: ['required'],
+  phone: ['required', 'phone'],
+};
+
+const validation = window.FormValidation ? window.FormValidation.attachValidation(form, CHECKOUT_RULES) : null;
+
+// 郵便番号→住所自動入力(zipcloud API)
+const postalInput = form?.querySelector('input[name="postal_code"]');
+const addressInput = form?.querySelector('input[name="address"]');
+let lastLookedUpZip = '';
+
+function getOrCreateHintEl(field, className) {
+  let el = field.parentElement.querySelector(`:scope > .${className}`);
+  if (!el) {
+    el = document.createElement('p');
+    el.className = className;
+    // field-error があればその直後に、なければinputの直後に挿入
+    const fieldError = field.parentElement.querySelector(':scope > .field-error');
+    (fieldError || field).insertAdjacentElement('afterend', el);
+  }
+  return el;
+}
+
+function clearZipMessages() {
+  const warningEl = postalInput?.parentElement.querySelector(':scope > .field-warning');
+  if (warningEl) {
+    warningEl.textContent = '';
+    warningEl.hidden = true;
+  }
+  const hintEl = addressInput?.parentElement.querySelector(':scope > .field-hint');
+  if (hintEl) {
+    hintEl.textContent = '';
+    hintEl.hidden = true;
+  }
+}
+
+function showZipWarning(message) {
+  if (!postalInput) return;
+  const el = getOrCreateHintEl(postalInput, 'field-warning');
+  el.textContent = message;
+  el.hidden = false;
+}
+
+function showAddressHint(message) {
+  if (!addressInput) return;
+  const el = getOrCreateHintEl(addressInput, 'field-hint');
+  el.textContent = message;
+  el.hidden = false;
+}
+
+async function lookupAddressByZip() {
+  if (!postalInput || !addressInput) return;
+  const raw = window.FormValidation ? window.FormValidation.normalizePostalCode(postalInput.value) : postalInput.value.trim();
+  const digits = window.FormValidation ? window.FormValidation.digitsOnly(raw) : raw.replace(/[^0-9]/g, '');
+  if (digits.length !== 7) return;
+  if (digits === lastLookedUpZip) return;
+  lastLookedUpZip = digits;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+  try {
+    const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${digits}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (data.status !== 200 || !Array.isArray(data.results) || data.results.length === 0) {
+      showZipWarning('該当する住所が見つかりませんでした。');
+      return;
+    }
+
+    clearZipMessages();
+
+    if (addressInput.value.trim()) return; // 既に入力がある場合は上書きしない
+
+    const r = data.results[0];
+    addressInput.value = `${r.address1 || ''}${r.address2 || ''}${r.address3 || ''}`;
+    showAddressHint('住所を自動入力しました。番地・建物名を続けてご入力ください。');
+    addressInput.focus();
+    if (validation) validation.clearFieldError(addressInput);
+  } catch {
+    clearTimeout(timeoutId);
+    // API失敗/タイムアウト時は静かにスキップ(自動入力は補助機能)
+  }
+}
+
+postalInput?.addEventListener('input', () => {
+  const digits = window.FormValidation ? window.FormValidation.digitsOnly(postalInput.value) : postalInput.value.replace(/[^0-9]/g, '');
+  if (digits.length === 7) lookupAddressByZip();
+});
+postalInput?.addEventListener('blur', () => lookupAddressByZip());
+
 async function prefillEmailFromSession() {
   try {
     const res = await fetch('/api/auth/me');
@@ -122,13 +219,21 @@ async function loadSummary() {
 form?.addEventListener('submit', async (e) => {
   e.preventDefault();
   errorEl.hidden = true;
+
+  if (validation && !validation.validateAll()) {
+    return;
+  }
+
   submitButton.disabled = true;
+  const originalButtonLabel = submitButton.textContent;
+  submitButton.textContent = '送信中…';
 
   const items = window.Cart.getItems();
   if (items.length === 0) {
     errorEl.textContent = 'カートが空です。';
     errorEl.hidden = false;
     submitButton.disabled = false;
+    submitButton.textContent = originalButtonLabel;
     return;
   }
 
@@ -174,6 +279,7 @@ form?.addEventListener('submit', async (e) => {
         : '注文の送信に失敗しました。入力内容をご確認のうえ、再度お試しください。';
     errorEl.hidden = false;
     submitButton.disabled = false;
+    submitButton.textContent = originalButtonLabel;
   }
 });
 

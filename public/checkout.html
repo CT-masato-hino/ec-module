@@ -38,21 +38,21 @@
 
   <section class="checkout-form">
     <h2>お届け先情報</h2>
-    <form id="checkout-form">
+    <form id="checkout-form" novalidate>
       <label>お名前<span class="required">*</span>
-        <input type="text" name="name" required>
+        <input type="text" name="name">
       </label>
       <label>メールアドレス<span class="required">*</span>
-        <input type="email" name="email" required>
+        <input type="email" name="email">
       </label>
       <label>郵便番号<span class="required">*</span>
-        <input type="text" name="postal_code" placeholder="123-4567" required>
+        <input type="text" name="postal_code" placeholder="123-4567" inputmode="numeric" autocomplete="postal-code">
       </label>
       <label>住所<span class="required">*</span>
-        <input type="text" name="address" required>
+        <input type="text" name="address">
       </label>
       <label>電話番号<span class="required">*</span>
-        <input type="tel" name="phone" required>
+        <input type="tel" name="phone">
       </label>
       <label>備考
         <textarea name="note" rows="3"></textarea>
@@ -69,6 +69,7 @@
   <p>&copy; SAMPLE STORE</p>
 </footer>
 <script src="/js/cart.js"></script>
+<script src="/js/form-validation.js"></script>
 <script src="/js/checkout.js"></script>
 </body>
 </html>
