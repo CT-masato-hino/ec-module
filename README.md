@@ -214,6 +214,8 @@ $10/月未満に収める指針: **基本は無料プランのまま使う(=$0)*
 - `.dev.vars` は絶対にコミットしない(`.gitignore` に登録済み)
 - `wrangler.toml` の `database_id` はプレースホルダー。実IDに差し替えた場合も公開して問題ない値だが、Secretsは絶対にコミットしないこと
 
-## ライセンス
+## ライセンス・開発元
 
-MIT License([LICENSE](LICENSE))。`LICENSE` の著作権者名(`ec-module authors`)は公開前に自身の名義に変更すること。
+MIT License([LICENSE](LICENSE))
+
+開発元: [Chapter Tech合同会社 (Chapter Tech LLC.)](https://github.com/CT-masato-hino) — ITコンサルティング・PMO・DX支援 / Web制作・運用サービス「デジステップ」 / 業務自動化・システム開発
