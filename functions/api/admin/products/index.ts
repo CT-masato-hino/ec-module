@@ -14,7 +14,6 @@ interface CreateProductBody {
   description?: string | null;
   price_display?: number;
   currency?: string;
-  stripe_price_id?: string;
   image_url?: string | null;
   is_active?: boolean;
   sort_order?: number;
@@ -29,11 +28,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return Response.json({ error: 'invalid_body' }, { status: 400 });
   }
 
-  if (!body.slug || !body.name || body.price_display === undefined || !body.stripe_price_id) {
-    return Response.json(
-      { error: 'slug_name_price_display_stripe_price_id_required' },
-      { status: 400 }
-    );
+  if (!body.slug || !body.name || body.price_display === undefined) {
+    return Response.json({ error: 'slug_name_price_display_required' }, { status: 400 });
   }
 
   const now = nowIso();
@@ -43,8 +39,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     await context.env.DB.prepare(
       `INSERT INTO products (
         id, slug, name, description, price_display, currency,
-        stripe_price_id, image_url, is_active, sort_order, created_at, updated_at, stock
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        image_url, is_active, sort_order, created_at, updated_at, stock
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         id,
@@ -53,7 +49,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         body.description ?? null,
         body.price_display,
         body.currency ?? 'JPY',
-        body.stripe_price_id,
         body.image_url ?? null,
         body.is_active === false ? 0 : 1,
         body.sort_order ?? 0,

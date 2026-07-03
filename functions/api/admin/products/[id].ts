@@ -6,7 +6,6 @@ interface UpdateProductBody {
   description?: string | null;
   price_display?: number;
   currency?: string;
-  stripe_price_id?: string;
   image_url?: string | null;
   is_active?: boolean;
   sort_order?: number;
@@ -38,7 +37,6 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
        description = COALESCE(?, description),
        price_display = COALESCE(?, price_display),
        currency = COALESCE(?, currency),
-       stripe_price_id = COALESCE(?, stripe_price_id),
        image_url = COALESCE(?, image_url),
        is_active = COALESCE(?, is_active),
        sort_order = COALESCE(?, sort_order),
@@ -51,7 +49,6 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       body.description ?? null,
       body.price_display ?? null,
       body.currency ?? null,
-      body.stripe_price_id ?? null,
       body.image_url ?? null,
       body.is_active === undefined ? null : body.is_active ? 1 : 0,
       body.sort_order ?? null,

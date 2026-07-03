@@ -140,7 +140,7 @@ node scripts/send-test-webhook.mjs <cs_...>
 どちらの場合も本番前チェックリスト:
 1. `npx wrangler d1 create <db名>` → `wrangler.toml` の `database_id` を実IDに差し替え → `npm run db:migrations:apply:remote`
 2. Pagesプロジェクトに D1(DB)バインディングとSecrets(実Stripeキー)を設定 → モック決済モードが自動で無効化される
-3. Stripeダッシュボードで Price を作成し `products.stripe_price_id` を実IDに更新、Webhookエンドポイント `https://<domain>/api/webhooks/stripe` を登録(`checkout.session.completed`)
+3. Stripeダッシュボードで Webhookエンドポイント `https://<domain>/api/webhooks/stripe` を登録(`checkout.session.completed` / `async_payment_succeeded` / `async_payment_failed` / `expired`)。**Stripe側での商品・Price作成は不要**(Checkoutは`price_data`でD1の価格を動的に渡す。価格の正はD1の`price_display`のみ)
 4. `/admin/*` と `/api/admin/*` を Cloudflare Access で保護(Basic認証は開発用の簡易保護でしかない)
 5. `/api/*` `/admin/*` `/checkout/*` をキャッシュ対象外にする(Cache Rules)
 6. seed商品・SAMPLE STOREブランド・about/legalのダミー事業者情報を実データに差し替え

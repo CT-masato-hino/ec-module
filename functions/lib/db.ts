@@ -5,7 +5,6 @@ export interface ProductRow {
   description: string | null;
   price_display: number;
   currency: string;
-  stripe_price_id: string;
   image_url: string | null;
   is_active: number;
   sort_order: number;

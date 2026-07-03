@@ -33,7 +33,6 @@ interface ResolvedItem {
   unitPrice: number;
   quantity: number;
   subtotal: number;
-  stripePriceId: string;
 }
 
 function isValidQuantity(value: unknown): value is number {
@@ -118,7 +117,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       unitPrice: product.price_display,
       quantity,
       subtotal,
-      stripePriceId: product.stripe_price_id,
     });
   }
 
@@ -228,7 +226,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      line_items: resolvedItems.map((item) => ({ price: item.stripePriceId, quantity: item.quantity })),
+      // 価格の正はD1のprice_display。price_dataで動的に渡すため、Stripe側でのPrice作成・同期は不要
+      line_items: resolvedItems.map((item) => ({
+        price_data: {
+          currency: 'jpy',
+          unit_amount: item.unitPrice,
+          product_data: { name: item.productName },
+        },
+        quantity: item.quantity,
+      })),
       customer_email: shipping.email,
       success_url: `${context.env.STRIPE_SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: context.env.STRIPE_CANCEL_URL,

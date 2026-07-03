@@ -136,7 +136,6 @@ function openEditForm(product) {
   createForm.elements.description.value = product.description ?? '';
   createForm.elements.price_display.value = product.price_display ?? '';
   createForm.elements.currency.value = product.currency ?? 'JPY';
-  createForm.elements.stripe_price_id.value = product.stripe_price_id ?? '';
   createForm.elements.sort_order.value = product.sort_order ?? 0;
   createForm.elements.stock.value = product.stock === null || product.stock === undefined ? '' : product.stock;
   createForm.elements.is_active.value = product.is_active ? 'true' : 'false';

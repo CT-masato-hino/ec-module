@@ -82,11 +82,7 @@ npm run db:migrations:apply:local   # ローカル
 npm run db:migrations:apply:remote  # 本番/リモートD1
 ```
 
-`products.stripe_price_id` はプレースホルダー(`price_xxxxxxxxxxxxx`)なので、Stripeダッシュボードで実際のPriceを作成し、管理画面(`/admin/products`)または以下のSQLで更新すること。
-
-```bash
-npx wrangler d1 execute ec_db --local --command "UPDATE products SET stripe_price_id = 'price_実際のID' WHERE slug = 'sample-item-a'"
-```
+**Stripe側での商品・Price登録は不要。** 決済時はCheckoutの`price_data`でD1の`price_display`を動的に渡すため、価格の管理はこのシステムの管理画面だけで完結する(価格の正はD1のみ。金額はサーバー側でD1から取得するため、フロント改ざんの影響も受けない)。
 
 ### 3. Stripeキー設定
 
