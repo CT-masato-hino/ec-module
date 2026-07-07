@@ -16,7 +16,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # wrangler 4系がNode.js 22以上を必須とするため
+          node-version: 22
           cache: npm
 
       - name: Install dependencies

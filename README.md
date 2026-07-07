@@ -49,6 +49,8 @@ Cloudflare Pages + Pages Functions + D1 + Stripe Checkout構成のミニECサイ
 
 このリポジトリはCloudflareアカウントもStripeアカウントも用意しなくても、ローカルで一通りの購入導線を確認できるようになっている。
 
+前提: Node.js 22以上(wrangler 4系の要件)。
+
 ```bash
 npm install
 npm run db:migrations:apply:local
