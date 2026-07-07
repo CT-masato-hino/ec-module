@@ -46,6 +46,7 @@ migrations/0001_init.sql          スキーマ+seed(1本に統合済み)
 migrations/0002_members_email.sql users/sessions/email_logsテーブル、orders/checkout_sessionsへの列追加
 wrangler.toml      D1バインディング(DB)、[vars]にADMIN_USERNAME/PASSWORD、PAYMENT_METHODS等
 .dev.vars          ローカル用シークレット(.dev.vars.exampleからコピー)
+docs/COMPARISON.md BASE/Shopifyとの費用・機能比較(提案資料の素材)
 ```
 
 ## 開発コマンド
@@ -55,7 +56,11 @@ npm install
 npm run db:migrations:apply:local   # ローカルD1にスキーマ+seed投入
 npm run dev                         # wrangler pages dev (http://localhost:8788)
 npm run typecheck                   # tsc --noEmit(変更後は必ず実行)
+npm test                            # ユニット/統合テスト(Vitest + @cloudflare/vitest-pool-workers。変更後はtypecheckとあわせて必ず実行)
+npm run test:e2e                    # E2Eスモーク(wrangler pages devを実際に起動して購入導線を通しで検証。scripts/e2e-smoke.mjs)
 ```
+
+**テスト基盤**: `test/` ディレクトリにVitestのユニット/統合テストがある(`vitest.config.ts`でD1マイグレーションを自動適用)。`functions/lib/`の主要ロジック(在庫整合・送料・バリデーション・支払い方法・パスワードハッシュ)と`functions/api/checkout.ts`・`functions/api/webhooks/stripe.ts`のハンドラ統合テストをカバーする。E2Eスモーク(`scripts/e2e-smoke.mjs`)はサーバーを実際に起動してHTTP経由で購入フロー全体を検証する、より重いテスト。**コード変更後はtypecheckに加えて`npm test`を実行する**こと。
 
 **環境の初期化は `npm run init` に一本化されている**(.dev.vars用意→ローカルD1/R2 state削除→マイグレーション+サンプルデータ投入。`/reset-demo` スラッシュコマンドでも可)。手動で `rm -rf .wrangler/state/v3/...` を叩かないこと。
 **注意: init後、起動中のdevサーバーは必ず再起動する**(古いDBハンドルを掴んだままになり応答が壊れる)。
@@ -79,6 +84,7 @@ node scripts/send-test-webhook.mjs <cs_...>
 遅延決済(コンビニ払い・銀行振込等)のテスト: `completed`(unpaid)→`async_payment_succeeded`(paid)/`async_payment_failed`(failed)の順でスクリプトから送ると、注文の入金状態(orders.payment_status)が 入金待ち→入金済み/決済失敗 と遷移する。注文には2軸のステータスがある:
 - `payment_status`(入金・Stripe起点): paid=入金済み / unpaid=入金待ち / failed=決済失敗。Webhookが更新する
 - `fulfillment_status`(発送対応・店舗起点): pending/processing/shipped/cancelled。管理画面から変更する
+- **在庫整合**(`functions/lib/orders.ts`): 注文作成時の在庫減算はガード付きUPDATE(`stock >= ?`)のため、同時購入等で減算できなかった場合は注文を成立させたまま`orders.stock_shortage`を立てて管理画面に警告表示する。`fulfillment_status='cancelled'`または`payment_status='failed'`(inactive)への変更時は`syncStockForStatusChange`が在庫を自動で戻し(`stock_restored`で二重復元防止)、inactiveからの復帰時は再減算する
 **実キーでのみ検証可能な残り**: `stripe.checkout.sessions.create` の実APIコールと、Stripeからの実イベント配送(`stripe listen`)。実キー設定後にREADMEの手順で確認する。
 
 ## 動作確認フロー(モック決済)
@@ -129,6 +135,8 @@ node scripts/send-test-webhook.mjs <cs_...>
 | BANK_TRANSFER_INFO | wrangler.toml [vars] | 振込先情報の文字列(ダミー値。本番では実際の振込先に差し替える) |
 | R2_STORAGE_LIMIT_MB | wrangler.toml [vars] | 画像ストレージ上限(MB)。デフォルト1024(小規模EC想定の仮値)。超過時はアップロードを400で拒否 |
 | MAX_PRODUCTS | wrangler.toml [vars] | 商品数の上限。デフォルト100(小規模EC想定の仮値)。超過時は登録を400で拒否 |
+| SHIPPING_FEE | wrangler.toml [vars] | 全国一律送料(円)。デフォルト`"0"`(送料込み運用。価格・合計表示は従来通り「税込・送料込み」のまま変わらない) |
+| FREE_SHIPPING_THRESHOLD | wrangler.toml [vars] | この金額(円)以上で送料無料にする閾値。デフォルト`"0"`(無料条件なし) |
 
 ## 既存コーポレートサイトへの組み込み
 
@@ -144,9 +152,12 @@ node scripts/send-test-webhook.mjs <cs_...>
 1. `npx wrangler d1 create <db名>` → `wrangler.toml` の `database_id` を実IDに差し替え → `npm run db:migrations:apply:remote`。あわせて `npx wrangler r2 bucket create ec-images` でR2バケットを作成し、PagesにR2(`IMAGES`)バインディングを追加(商品画像アップロード用。ローカルはwranglerがシミュレートする)
 2. Pagesプロジェクトに D1(DB)バインディングとSecrets(実Stripeキー)を設定 → モック決済モードが自動で無効化される
 3. Stripeダッシュボードで Webhookエンドポイント `https://<domain>/api/webhooks/stripe` を登録(`checkout.session.completed` / `async_payment_succeeded` / `async_payment_failed` / `expired`)。**Stripe側での商品・Price作成は不要**(Checkoutは`price_data`でD1の価格を動的に渡す。価格の正はD1の`price_display`のみ)
+   - コンビニ決済を使う場合はStripeダッシュボードの決済手段設定で有効化する。コード側は遅延決済(`checkout.session.completed`〈unpaid〉→`async_payment_succeeded`/`async_payment_failed`)に対応済みだが、実キーでの動作確認が必要
 4. `/admin/*` と `/api/admin/*` を Cloudflare Access で保護(Basic認証は開発用の簡易保護でしかない)
 5. `/api/*` `/admin/*` `/checkout/*` をキャッシュ対象外にする(Cache Rules)
 6. seed商品・SAMPLE STOREブランド・about/legalのダミー事業者情報を実データに差し替え
+7. `PAYMENT_METHODS` の設定内容と legal.html(特定商取引法に基づく表記)のお支払い方法・支払時期の記載を整合させる
+8. 送料設定(`SHIPPING_FEE`)と legal.html の「商品代金以外の必要料金」の記載も整合させる
 
 ## 既知の制約
 

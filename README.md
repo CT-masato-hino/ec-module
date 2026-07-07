@@ -1,8 +1,12 @@
 # 汎用ECモジュール(BASE風)
 
+[![CI](https://github.com/CT-masato-hino/ec-module/actions/workflows/ci.yml/badge.svg)](https://github.com/CT-masato-hino/ec-module/actions/workflows/ci.yml)
+
 Cloudflare Pages + Pages Functions + D1 + Stripe Checkout構成のミニECサイト。BASE風のストアフロント/管理画面、カート、配送先入力、注文の発送対応管理、在庫管理に対応。商品データ(SAMPLE STORE / サンプルアイテム)はダミーであり、汎用のECモジュールとして利用できる。
 
 > AIエージェント(Claude Code等)で開発する場合は [AGENTS.md](AGENTS.md) を参照。設計ルール・既存コーポレートサイトへの組み込みパターン・本番移行チェックリストを記載している。
+>
+> BASE/Shopifyとの費用・機能比較は [docs/COMPARISON.md](docs/COMPARISON.md) を参照。
 
 ## 構成
 
@@ -25,7 +29,7 @@ Cloudflare Pages + Pages Functions + D1 + Stripe Checkout構成のミニECサイ
 - 商品画像のドラッグ&ドロップアップロード(Cloudflare R2): フォームに画像をドロップ(または選択)するとR2に保存されURLが自動入力される。JPEG/PNG/WebP/GIF、受け入れ10MBまで(スマホ写真の原寸OK。アップロード時に長辺1600pxへ自動リサイズして保存)。ローカルはwranglerがR2をシミュレートするためアカウント不要。URLの直接入力も引き続き可能
 - 注文の発送対応状況管理: 未対応/対応中/発送済み/キャンセルの4状態をワンクリックで変更(`PUT /api/admin/orders/:id`)。注文一覧にバッジ表示、対応状況別の絞り込みに対応
 - 入金状態管理(遅延決済・銀行振込対応): 注文は「入金(payment_status)」と「発送対応(fulfillment_status)」の2軸で管理。コンビニ払い・銀行振込などの遅延決済はStripeの`async_payment_succeeded/failed`イベントで 入金待ち→入金済み/決済失敗 に自動更新され、管理画面にバッジ表示・絞り込みできる。銀行振込は管理画面の「入金を確認した」ボタンで手動更新する。購入者側の完了ページにも入金待ちの案内・振込先を表示
-- 在庫管理(売り越し防止): 商品ごとにNULL(在庫管理しない)または数値の在庫数を設定可能。注文確定時に在庫を減算し、`/api/checkout`で在庫超過時は400 `insufficient_stock`を返す。ストアフロントはSOLD OUT表示・残数表示・数量セレクタの上限制御に対応
+- 在庫管理(売り越し防止): 商品ごとにNULL(在庫管理しない)または数値の在庫数を設定可能。`/api/checkout`時点で在庫超過を検証し400 `insufficient_stock`を返すほか、注文作成時も在庫数を上回らないガード付きUPDATEで減算する(同時購入等でこのガードにより減算できなかった場合は注文自体は成立させたうえで`stock_shortage`フラグを立て、管理画面の注文一覧・詳細に警告バッジを表示して気づけるようにする)。キャンセル(発送対応状況)や決済失敗になった注文は在庫を自動的に元へ戻し(`stock_restored`で二重復元を防止)、キャンセル取り消し等で再度有効になった場合は在庫を再減算する。ただし`stock_shortage`が立った注文は実際に減算された明細を特定できないため自動同期の対象外(警告バッジを確認した運営者が在庫数を手動調整する)。ストアフロントはSOLD OUT表示・残数表示・数量セレクタの上限制御に対応
 - 注文完了ページの明細表示: `/checkout/success?session_id=...`で注文番号・購入商品・合計(税込・送料込み)・お届け先氏名を表示する公開API(`GET /api/orders/by-session/:session_id`、個人情報である住所・電話・メールは含まない)
 - フォームバリデーション(インライン表示): お届け先入力・会員登録・ログイン・注文照会の各フォームは`novalidate`+フィールド単位のインラインエラー表示(ブラウザ標準のバリデーションポップアップは使わない)。郵便番号からの住所自動入力(zipcloud API使用・キー不要)にも対応
 
@@ -50,6 +54,16 @@ npm install
 npm run db:migrations:apply:local
 cp .dev.vars.example .dev.vars   # 中身はダミーキーのままでOK
 npm run dev
+```
+
+### テスト
+
+自動テストを用意している。コード変更後は `typecheck` に加えて `npm test` を実行すること。
+
+```bash
+npm run typecheck   # 型チェック
+npm test            # ユニット/統合テスト(Vitest + @cloudflare/vitest-pool-workers)
+npm run test:e2e    # E2Eスモーク(wrangler pages devを実際に起動して購入導線を通しで検証)
 ```
 
 `http://localhost:8788` にアクセスすると、商品一覧→詳細→カート→配送先入力→支払い方法選択→モック決済(または銀行振込)→注文保存(明細・配送先付き)、という流れをそのまま確認できる。
@@ -143,6 +157,17 @@ PAYMENT_METHODS = "bank_transfer"           # 銀行振込のみ
 
 **銀行振込の運用フロー**: 銀行振込を選んで注文すると、決済画面を挟まずその場で「入金待ち(payment_status=unpaid)」の注文が作成され、完了ページと注文確認メールに振込先が案内される。振込入金を確認したら、管理画面(`/admin/orders`)の該当注文を開き「入金を確認した」ボタンを押すと入金済みに更新され、入金確認メールが送信される。その後は通常の注文と同様に発送対応状況(未対応→対応中→発送済み)を更新する。
 
+## 送料の設定(送料込み/別建て)
+
+`wrangler.toml` の `[vars]` にある `SHIPPING_FEE` / `FREE_SHIPPING_THRESHOLD` で送料の扱いを設定する。
+
+| 変数 | 内容 | デフォルト |
+|---|---|---|
+| `SHIPPING_FEE` | 全国一律送料(円)。`0`の場合は送料込み運用(価格・合計に送料を表示しない、従来どおりの表示) | `"0"` |
+| `FREE_SHIPPING_THRESHOLD` | この金額(円)以上の購入で送料無料にする閾値。`0`の場合は無料条件なし | `"0"` |
+
+デフォルト(両方`"0"`)では送料は一切表示されず、既存の「(税込・送料込み)」表示のまま動作する。`SHIPPING_FEE`に金額を設定すると、商品ページの価格表示が「(税込)」に変わり、カート・レジ・注文完了・注文照会・マイページ・メールに送料行が追加される。金額計算は常にサーバー側(`functions/lib/shipping.ts`)で行い、フロントは表示のみ。
+
 ## メール通知の設定(モック/Resend切替)
 
 `RESEND_API_KEY` が未設定、または `xxxxxx` のようなプレースホルダーのままの場合、メールは実送信されず `email_logs` テーブルに `status='mocked'` で記録されるだけの「モックモード」で動作する。管理画面の注文詳細から送信履歴(種別・送信結果・日時)を確認できる。
@@ -162,7 +187,8 @@ npx wrangler pages deploy public
 - Pages プロジェクトに D1 (`DB`) バインディングを追加(本番/プレビュー環境それぞれ)
 - R2バケットを作成し(`npx wrangler r2 bucket create ec-images`)、Pages プロジェクトに R2 (`IMAGES`) バインディングを追加(商品画像アップロード用)
 - 環境変数(Secrets): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` をPages側に設定(本番では必ず実キーに切り替え、モック決済モードを無効化すること)
-- Stripeダッシュボードで Webhook エンドポイント `https://<your-domain>/api/webhooks/stripe` を登録し、`checkout.session.completed` / `checkout.session.expired` / `charge.refunded` を購読
+- Stripeダッシュボードで Webhook エンドポイント `https://<your-domain>/api/webhooks/stripe` を登録し、`checkout.session.completed` / `async_payment_succeeded` / `async_payment_failed` / `expired` を購読(`charge.refunded` は現状コード側でno-op〈受信しても何もしない〉のため購読は任意)
+- コンビニ決済を使う場合はStripeダッシュボードの決済手段設定で有効化すること。コード側は遅延決済(`checkout.session.completed`〈unpaid〉→`async_payment_succeeded`/`async_payment_failed`)に対応済みだが、実キーでの動作確認が必要
 - Cloudflare Access で `/admin/*` と `/api/admin/*` を保護するポリシーを作成する。現状は簡易Basic認証(`ADMIN_USERNAME`/`ADMIN_PASSWORD`)のみで保護されているため、本番運用前にCloudflare Accessへ置き換えるか、`ADMIN_PASSWORD` を推測困難な値に変更しSecretとして再設定すること
 
 ## スコープ外
