@@ -15,4 +15,6 @@ export interface Env {
   BANK_TRANSFER_INFO: string;
   R2_STORAGE_LIMIT_MB: string;
   MAX_PRODUCTS: string;
+  SHIPPING_FEE: string;
+  FREE_SHIPPING_THRESHOLD: string;
 }

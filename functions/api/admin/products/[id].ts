@@ -1,5 +1,13 @@
 import type { Env } from '../../../lib/env';
 import { nowIso } from '../../../lib/db';
+import {
+  validateImages,
+  validateName,
+  validatePriceDisplay,
+  validateSortOrder,
+  validateSpecField,
+  validateStock,
+} from '../../../lib/product-validation';
 
 interface UpdateProductBody {
   name?: string;
@@ -10,6 +18,11 @@ interface UpdateProductBody {
   is_active?: boolean;
   sort_order?: number;
   stock?: number | null;
+  origin?: string | null;
+  capacity?: string | null;
+  shipping_note?: string | null;
+  storage_note?: string | null;
+  images?: string[];
 }
 
 export const onRequestPut: PagesFunction<Env> = async (context) => {
@@ -26,10 +39,52 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
 
+  // 各項目は「bodyにキーが存在する場合のみ」検証する(部分更新のため未指定項目はチェック対象外)
+  if (Object.prototype.hasOwnProperty.call(body, 'name')) {
+    const nameError = validateName(body.name);
+    if (nameError) return Response.json(nameError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'price_display')) {
+    const priceError = validatePriceDisplay(body.price_display);
+    if (priceError) return Response.json(priceError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'stock')) {
+    const stockError = validateStock(body.stock);
+    if (stockError) return Response.json(stockError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'sort_order')) {
+    const sortOrderError = validateSortOrder(body.sort_order);
+    if (sortOrderError) return Response.json(sortOrderError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'origin')) {
+    const originError = validateSpecField(body.origin);
+    if (originError) return Response.json(originError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'capacity')) {
+    const capacityError = validateSpecField(body.capacity);
+    if (capacityError) return Response.json(capacityError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'shipping_note')) {
+    const shippingNoteError = validateSpecField(body.shipping_note);
+    if (shippingNoteError) return Response.json(shippingNoteError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'storage_note')) {
+    const storageNoteError = validateSpecField(body.storage_note);
+    if (storageNoteError) return Response.json(storageNoteError, { status: 400 });
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'images')) {
+    const imagesError = validateImages(body.images);
+    if (imagesError) return Response.json(imagesError, { status: 400 });
+  }
+
   // stockは「空文字=NULL=無制限」を明示的に設定できるようにするため、
   // bodyにキーが存在するかどうかでCOALESCEを使うか直接値をセットするかを切り替える。
   const hasStockKey = Object.prototype.hasOwnProperty.call(body, 'stock');
   const stockValue = hasStockKey ? body.stock ?? null : undefined;
+
+  // imagesも同様に「キーが存在するときのみ更新」する(未指定なら既存のimages_jsonを保持)
+  const hasImagesKey = Object.prototype.hasOwnProperty.call(body, 'images');
+  const imagesJsonValue = hasImagesKey ? JSON.stringify(body.images ?? []) : undefined;
 
   await context.env.DB.prepare(
     `UPDATE products SET
@@ -41,6 +96,11 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
        is_active = COALESCE(?, is_active),
        sort_order = COALESCE(?, sort_order),
        stock = CASE WHEN ? = 1 THEN ? ELSE stock END,
+       origin = COALESCE(?, origin),
+       capacity = COALESCE(?, capacity),
+       shipping_note = COALESCE(?, shipping_note),
+       storage_note = COALESCE(?, storage_note),
+       images_json = CASE WHEN ? = 1 THEN ? ELSE images_json END,
        updated_at = ?
      WHERE id = ?`
   )
@@ -54,6 +114,12 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       body.sort_order ?? null,
       hasStockKey ? 1 : 0,
       stockValue ?? null,
+      body.origin ?? null,
+      body.capacity ?? null,
+      body.shipping_note ?? null,
+      body.storage_note ?? null,
+      hasImagesKey ? 1 : 0,
+      imagesJsonValue ?? null,
       nowIso(),
       id
     )

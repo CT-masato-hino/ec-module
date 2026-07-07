@@ -89,6 +89,10 @@ form?.addEventListener('submit', async (e) => {
           </div>`
         : '';
 
+    const shippingFee = Number(order.shipping_fee) || 0;
+    const shippingRowHtml = shippingFee > 0 ? `<p class="order-summary__shipping-fee">送料: &yen;${shippingFee.toLocaleString('ja-JP')}</p>` : '';
+    const totalTaxLabel = shippingFee > 0 ? '(税込)' : '(税込・送料込み)';
+
     resultEl.innerHTML = `
       <p class="order-summary__number">ご注文番号: ${escapeHtml(order.id)}</p>
       <p style="margin-bottom:16px;">
@@ -99,7 +103,8 @@ form?.addEventListener('submit', async (e) => {
         <thead><tr><th>商品</th><th>単価×数量</th><th>小計</th></tr></thead>
         <tbody>${itemsRows}</tbody>
       </table>
-      <p class="cart-total">合計 &yen;${Number(order.amount_total).toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>
+      ${shippingRowHtml}
+      <p class="cart-total">合計 &yen;${Number(order.amount_total).toLocaleString('ja-JP')}<span class="price__tax">${totalTaxLabel}</span></p>
       <ul class="account-order-detail__shipping">
         <li>お届け先: ${escapeHtml(order.shipping_name)}様</li>
         <li>郵便番号: ${escapeHtml(order.shipping_postal_code)}</li>

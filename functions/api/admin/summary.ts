@@ -6,8 +6,11 @@ interface SummaryRow {
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
+  // 「本日」はJST(UTC+9)基準で判定する。UTC時刻+9時間した時刻でJSTの0時に丸めてから、
+  // 9時間引いてUTCに戻すことでJST0時に相当するUTC時刻を求める。
+  const jstNow = new Date(Date.now() + 9 * 3600 * 1000);
+  jstNow.setUTCHours(0, 0, 0, 0);
+  const todayStart = new Date(jstNow.getTime() - 9 * 3600 * 1000);
   const todayStartIso = todayStart.toISOString();
 
   const row = await context.env.DB.prepare(

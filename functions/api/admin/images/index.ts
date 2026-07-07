@@ -1,4 +1,4 @@
-import type { Env } from '../../lib/env';
+import type { Env } from '../../../lib/env';
 
 // アップロードを許可する画像形式。SVGはスクリプトを含められXSSの温床になるため許可しない
 const ALLOWED_TYPES: Record<string, string> = {
@@ -31,6 +31,28 @@ async function getTotalStoredBytes(bucket: R2Bucket): Promise<number> {
   }
   return total;
 }
+
+// 画像ライブラリ一覧(管理画面の「画像」ページ用)。R2を1000件ずつページングして全件集計する
+export const onRequestGet: PagesFunction<Env> = async (context) => {
+  const images: Array<{ key: string; size: number; uploaded: string }> = [];
+  let totalBytes = 0;
+  let cursor: string | undefined = undefined;
+  for (;;) {
+    const listed = await context.env.IMAGES.list({ cursor, limit: 1000 });
+    for (const obj of listed.objects) {
+      images.push({ key: obj.key, size: obj.size, uploaded: obj.uploaded.toISOString() });
+      totalBytes += obj.size;
+    }
+    if (!listed.truncated) break;
+    cursor = listed.cursor;
+  }
+
+  return Response.json({
+    images,
+    total_bytes: totalBytes,
+    limit_bytes: getStorageLimitBytes(context.env),
+  });
+};
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   let formData: FormData;

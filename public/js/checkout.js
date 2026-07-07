@@ -15,6 +15,7 @@ const PAYMENT_METHOD_INFO = {
 };
 
 let selectedPaymentMethod = null;
+let shippingConfig = null;
 
 async function loadPaymentMethods() {
   try {
@@ -22,6 +23,9 @@ async function loadPaymentMethods() {
     const data = await res.json();
     const methods = Array.isArray(data.payment_methods) && data.payment_methods.length > 0 ? data.payment_methods : ['stripe'];
     selectedPaymentMethod = methods[0];
+
+    const fee = Number(data.shipping_fee) || 0;
+    shippingConfig = fee > 0 ? { fee, freeThreshold: Number(data.free_shipping_threshold) || 0 } : null;
 
     if (methods.length <= 1) {
       paymentSection.hidden = true;
@@ -203,12 +207,16 @@ async function loadSummary() {
       })
       .join('');
 
+    const totalHtml = window.Shipping
+      ? window.Shipping.buildTotalHtml(total, shippingConfig)
+      : `<p class="cart-total">合計 &yen;${total.toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>`;
+
     summaryEl.innerHTML = `
       <table class="cart-table">
         <thead><tr><th>商品</th><th>単価×数量</th><th>小計</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <p class="cart-total">合計 &yen;${total.toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>
+      ${totalHtml}
     `;
   } catch {
     summaryEl.innerHTML = '<p class="error">商品情報の取得に失敗しました。</p>';
@@ -283,6 +291,6 @@ form?.addEventListener('submit', async (e) => {
   }
 });
 
-loadSummary();
-loadPaymentMethods();
+// loadPaymentMethodsがshippingConfigを設定するため、summary描画より先に完了させる
+loadPaymentMethods().then(() => loadSummary());
 prefillEmailFromSession();

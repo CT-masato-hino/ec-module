@@ -1,6 +1,7 @@
 import type { Env } from '../../../lib/env';
 import { nowIso, isFulfillmentStatus, isManualPaymentStatus, type OrderRow } from '../../../lib/db';
 import { sendEmail, buildPaymentConfirmedEmail, buildShippedEmail } from '../../../lib/email';
+import { syncStockForStatusChange } from '../../../lib/orders';
 
 interface UpdateOrderBody {
   fulfillment_status?: string;
@@ -48,6 +49,10 @@ export const onRequestPut: PagesFunction<Env> = async (context) => {
       .bind(body.payment_status, now, id)
       .run();
   }
+
+  const newFulfillmentStatus = body.fulfillment_status ?? existing.fulfillment_status;
+  const newPaymentStatus = body.payment_status ?? existing.payment_status;
+  await syncStockForStatusChange(context.env.DB, existing, newPaymentStatus, newFulfillmentStatus);
 
   // 発送済みへの変更(元がshipped以外の場合のみ)で発送メールを送る
   if (

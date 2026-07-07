@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import type { Env } from '../../lib/env';
 import { newId, nowIso, isUniqueConstraintError, getCheckoutSessionById, type OrderRow } from '../../lib/db';
-import { createOrderIfNotExists, type OrderItemInput } from '../../lib/orders';
+import { createOrderIfNotExists, syncStockForStatusChange, type OrderItemInput } from '../../lib/orders';
 import { createStripeClient } from '../../lib/stripe';
 import { sendEmail, buildOrderConfirmationEmail, buildPaymentConfirmedEmail } from '../../lib/email';
 
@@ -101,6 +101,7 @@ async function handleCheckoutCompleted(
     },
     userId: checkoutSession.user_id,
     paymentMethod: checkoutSession.payment_method,
+    shippingFee: checkoutSession.shipping_fee,
   });
 
   await db
@@ -120,6 +121,7 @@ async function handleCheckoutCompleted(
       amountTotal: session.amount_total ?? checkoutSession.amount_total,
       shippingName: shipping.name,
       paymentStatus,
+      shippingFee: checkoutSession.shipping_fee,
     });
     waitUntil(
       sendEmail(env, {
@@ -156,6 +158,9 @@ async function updatePaymentStatus(
     .prepare(`UPDATE orders SET payment_status = ?, updated_at = ? WHERE stripe_session_id = ?`)
     .bind(paymentStatus, nowIso(), stripeSessionId)
     .run();
+
+  // failedへの遷移(在庫を戻す)、およびfailedからpaidへの復帰(在庫を再減算)を同期する
+  await syncStockForStatusChange(db, existing, paymentStatus, existing.fulfillment_status);
 
   if (paymentStatus === 'paid' && existing.payment_status !== 'paid') {
     const { subject, text } = buildPaymentConfirmedEmail({

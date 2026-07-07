@@ -6,6 +6,7 @@ import { getUserFromRequest } from '../lib/user-auth';
 import { getEnabledPaymentMethods, isPaymentMethod } from '../lib/payment';
 import { createOrderIfNotExists, type OrderItemInput } from '../lib/orders';
 import { sendEmail, buildOrderConfirmationEmail } from '../lib/email';
+import { getShippingConfig, computeShippingFee } from '../lib/shipping';
 
 interface CheckoutItemInput {
   product_id?: string;
@@ -120,7 +121,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  const amountTotal = resolvedItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const subtotal = resolvedItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const shippingConfig = getShippingConfig(context.env);
+  const shippingFee = computeShippingFee(subtotal, shippingConfig);
+  const amountTotal = subtotal + shippingFee;
 
   const checkoutSessionId = newId('cs');
   const now = nowIso();
@@ -145,10 +149,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   await context.env.DB.prepare(
     `INSERT INTO checkout_sessions (
       id, items_json, shipping_json, amount_total,
-      status, stripe_session_id, created_at, updated_at, user_id, payment_method
-    ) VALUES (?, ?, ?, ?, 'pending', NULL, ?, ?, ?, ?)`
+      status, stripe_session_id, created_at, updated_at, user_id, payment_method, shipping_fee
+    ) VALUES (?, ?, ?, ?, 'pending', NULL, ?, ?, ?, ?, ?)`
   )
-    .bind(checkoutSessionId, itemsJson, shippingJson, amountTotal, now, now, user?.id ?? null, paymentMethod)
+    .bind(checkoutSessionId, itemsJson, shippingJson, amountTotal, now, now, user?.id ?? null, paymentMethod, shippingFee)
     .run();
 
   if (paymentMethod === 'bank_transfer') {
@@ -179,6 +183,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       },
       userId: user?.id ?? null,
       paymentMethod: 'bank_transfer',
+      shippingFee,
     });
 
     await context.env.DB.prepare(`UPDATE checkout_sessions SET status = 'completed', updated_at = ? WHERE id = ?`)
@@ -197,6 +202,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         amountTotal,
         shippingName: shipping.name,
         paymentStatus: 'unpaid',
+        shippingFee,
       });
       const bankNote = `\n\nお振込先: ${context.env.BANK_TRANSFER_INFO}\nお振込の際は、お名前の前に注文番号(${orderId})をご記入ください。\nご入金確認後に発送いたします。`;
       context.waitUntil(
@@ -241,6 +247,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       metadata: {
         checkout_session_id: checkoutSessionId,
       },
+      ...(shippingFee > 0
+        ? {
+            shipping_options: [
+              {
+                shipping_rate_data: {
+                  type: 'fixed_amount' as const,
+                  fixed_amount: { amount: shippingFee, currency: 'jpy' },
+                  display_name: '送料',
+                },
+              },
+            ],
+          }
+        : {}),
     });
 
     if (!session.url) {

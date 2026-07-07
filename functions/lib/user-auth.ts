@@ -108,7 +108,15 @@ function parseCookies(request: Request): Record<string, string> {
     if (idx === -1) continue;
     const key = part.slice(0, idx).trim();
     const value = part.slice(idx + 1).trim();
-    if (key) result[key] = decodeURIComponent(value);
+    if (key) {
+      // 不正なパーセントエンコーディングだとdecodeURIComponentが例外を投げるため、
+      // 失敗時は生の値をそのまま使う(500を防ぐ)。
+      try {
+        result[key] = decodeURIComponent(value);
+      } catch {
+        result[key] = value;
+      }
+    }
   }
   return result;
 }

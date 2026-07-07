@@ -51,6 +51,12 @@ function renderDetailRow(order) {
     )
     .join('');
 
+  const shippingFee = Number(order.shipping_fee) || 0;
+  const shippingFeeHtml =
+    shippingFee > 0
+      ? `<p style="margin:4px 0 0;font-size:13px;">送料: &yen;${shippingFee.toLocaleString('ja-JP')}</p>`
+      : '';
+
   return `
     <tr class="account-order-detail" data-detail-for="${escapeHtml(order.id)}">
       <td colspan="6">
@@ -59,6 +65,7 @@ function renderDetailRow(order) {
           <thead><tr><th>商品名</th><th>単価</th><th>数量</th><th>小計</th></tr></thead>
           <tbody>${itemsRows || '<tr><td colspan="4">明細がありません</td></tr>'}</tbody>
         </table>
+        ${shippingFeeHtml}
         <h3 style="font-size:13px;">お届け先</h3>
         <ul class="account-order-detail__shipping">
           <li>氏名: ${escapeHtml(order.shipping_name)}</li>

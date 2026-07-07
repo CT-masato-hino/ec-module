@@ -73,6 +73,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     },
     userId: checkoutSession.user_id,
     paymentMethod: checkoutSession.payment_method,
+    shippingFee: checkoutSession.shipping_fee,
   });
 
   await context.env.DB.prepare(`UPDATE checkout_sessions SET status = 'completed', updated_at = ? WHERE id = ?`)
@@ -91,6 +92,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       amountTotal: checkoutSession.amount_total,
       shippingName: shipping.name,
       paymentStatus: 'paid',
+      shippingFee: checkoutSession.shipping_fee,
     });
     context.waitUntil(
       sendEmail(context.env, {

@@ -28,6 +28,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       payment_status: order.payment_status,
       payment_method: order.payment_method,
       shipping_name: order.shipping_name,
+      shipping_fee: order.shipping_fee,
       items: items.map((item) => ({
         product_name: item.product_name,
         unit_price: item.unit_price,

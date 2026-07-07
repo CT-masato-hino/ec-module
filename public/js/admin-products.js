@@ -139,8 +139,23 @@ function openEditForm(product) {
   createForm.elements.sort_order.value = product.sort_order ?? 0;
   createForm.elements.stock.value = product.stock === null || product.stock === undefined ? '' : product.stock;
   createForm.elements.is_active.value = product.is_active ? 'true' : 'false';
+  createForm.elements.origin.value = product.origin ?? '';
+  createForm.elements.capacity.value = product.capacity ?? '';
+  createForm.elements.shipping_note.value = product.shipping_note ?? '';
+  createForm.elements.storage_note.value = product.storage_note ?? '';
   setImagePreview(product.image_url ?? '');
   showUploadStatus('', false);
+
+  // images_jsonの先頭=メイン画像は既にimage_urlで復元済みなので、残りだけ追加画像として復元する
+  let images = [];
+  try {
+    images = product.images_json ? JSON.parse(product.images_json) : [];
+  } catch {
+    images = [];
+  }
+  extraImages = images.slice(1);
+  renderExtraImages();
+
   createFormSection.classList.add('is-open');
   createFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -287,7 +302,7 @@ async function uploadImage(rawFile) {
           : data.error === 'file_too_large'
             ? 'ファイルサイズは10MBまでです'
             : data.error === 'storage_limit_exceeded'
-              ? '画像ストレージの上限に達しています。不要な画像を削除するか上限設定(R2_STORAGE_LIMIT_MB)を見直してください'
+              ? '画像ストレージの上限に達しています。管理画面の「画像」ページから不要な画像を削除するか、上限設定(R2_STORAGE_LIMIT_MB)を見直してください'
               : `アップロードに失敗しました (${data.error || res.status})`;
       showUploadStatus(message, true);
       return;
@@ -324,6 +339,94 @@ imageFileInput.addEventListener('change', () => {
   imageFileInput.value = '';
 });
 
+// 追加画像(メイン画像とは別に最大7枚)
+const MAX_EXTRA_IMAGES = 7;
+const extraImageDropzone = document.getElementById('extra-image-dropzone');
+const extraImageFileInput = document.getElementById('extra-image-file-input');
+const extraImagesList = document.getElementById('extra-images-list');
+const extraImageUploadStatus = document.getElementById('extra-image-upload-status');
+let extraImages = [];
+
+function showExtraUploadStatus(message, isError) {
+  extraImageUploadStatus.textContent = message;
+  extraImageUploadStatus.classList.toggle('is-error', Boolean(isError));
+  extraImageUploadStatus.hidden = !message;
+}
+
+function renderExtraImages() {
+  extraImagesList.innerHTML = '';
+  for (const url of extraImages) {
+    const item = document.createElement('div');
+    item.className = 'extra-images-list__item';
+    item.innerHTML = `
+      <img src="${escapeHtml(url)}" alt="">
+      <button type="button" class="extra-images-list__remove" data-url="${escapeHtml(url)}" aria-label="削除">
+        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    extraImagesList.appendChild(item);
+  }
+}
+
+extraImagesList.addEventListener('click', (e) => {
+  const removeButton = e.target.closest('.extra-images-list__remove');
+  if (!removeButton) return;
+  const url = removeButton.dataset.url;
+  extraImages = extraImages.filter((u) => u !== url);
+  renderExtraImages();
+});
+
+async function uploadExtraImage(rawFile) {
+  if (extraImages.length >= MAX_EXTRA_IMAGES) {
+    showExtraUploadStatus(`追加画像は${MAX_EXTRA_IMAGES}枚までです`, true);
+    return;
+  }
+  showExtraUploadStatus('画像を圧縮しています…', false);
+  const file = await prepareImageForUpload(rawFile);
+  showExtraUploadStatus('アップロード中…', false);
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/api/admin/images', { method: 'POST', body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const message =
+        data.error === 'unsupported_type'
+          ? 'JPEG / PNG / WebP / GIF のみアップロードできます'
+          : data.error === 'file_too_large'
+            ? 'ファイルサイズは10MBまでです'
+            : data.error === 'storage_limit_exceeded'
+              ? '画像ストレージの上限に達しています。管理画面の「画像」ページから不要な画像を削除するか、上限設定(R2_STORAGE_LIMIT_MB)を見直してください'
+              : `アップロードに失敗しました (${data.error || res.status})`;
+      showExtraUploadStatus(message, true);
+      return;
+    }
+    extraImages.push(data.url);
+    renderExtraImages();
+    showExtraUploadStatus('アップロードしました', false);
+  } catch {
+    showExtraUploadStatus('アップロードに失敗しました。通信環境をご確認ください', true);
+  }
+}
+
+extraImageDropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  extraImageDropzone.classList.add('is-dragover');
+});
+extraImageDropzone.addEventListener('dragleave', () => extraImageDropzone.classList.remove('is-dragover'));
+extraImageDropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  extraImageDropzone.classList.remove('is-dragover');
+  const file = e.dataTransfer?.files?.[0];
+  if (file) uploadExtraImage(file);
+});
+document.getElementById('select-extra-image-button').addEventListener('click', () => extraImageFileInput.click());
+extraImageFileInput.addEventListener('change', () => {
+  const file = extraImageFileInput.files?.[0];
+  if (file) uploadExtraImage(file);
+  extraImageFileInput.value = '';
+});
+
 toggleCreateFormButton.addEventListener('click', () => {
   const willOpen = !createFormSection.classList.contains('is-open');
   if (willOpen) {
@@ -331,6 +434,9 @@ toggleCreateFormButton.addEventListener('click', () => {
     setFormMode('create');
     setImagePreview('');
     showUploadStatus('', false);
+    extraImages = [];
+    renderExtraImages();
+    showExtraUploadStatus('', false);
   }
   createFormSection.classList.toggle('is-open');
 });
@@ -340,6 +446,9 @@ cancelCreateFormButton.addEventListener('click', () => {
   setFormMode('create');
   setImagePreview('');
   showUploadStatus('', false);
+  extraImages = [];
+  renderExtraImages();
+  showExtraUploadStatus('', false);
 });
 
 createForm.addEventListener('submit', async (e) => {
@@ -351,6 +460,8 @@ createForm.addEventListener('submit', async (e) => {
   body.sort_order = Number(body.sort_order || 0);
   body.is_active = body.is_active === 'true';
   body.stock = body.stock === '' || body.stock === undefined ? null : Number(body.stock);
+  // メイン画像を先頭+追加画像でimages配列を構築する(メイン画像が空なら追加画像のみ)
+  body.images = body.image_url ? [body.image_url, ...extraImages] : [...extraImages];
 
   let res;
   if (editingProductId) {
@@ -383,6 +494,9 @@ createForm.addEventListener('submit', async (e) => {
   setFormMode('create');
   setImagePreview('');
   showUploadStatus('', false);
+  extraImages = [];
+  renderExtraImages();
+  showExtraUploadStatus('', false);
   loadProducts();
 });
 

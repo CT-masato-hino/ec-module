@@ -94,3 +94,49 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAccountIcon();
 });
 window.Cart = Cart;
+
+// 送料設定(/api/config)を1回だけ取得して使い回す共通ヘルパー。
+// fee=0(デフォルト・送料込み運用)の場合はnullを返し、呼び出し側で従来表示を維持する。
+let shippingConfigPromise = null;
+
+const Shipping = {
+  async getConfig() {
+    if (!shippingConfigPromise) {
+      shippingConfigPromise = fetch('/api/config')
+        .then((res) => res.json())
+        .catch(() => ({}));
+    }
+    const data = await shippingConfigPromise;
+    const fee = Number(data.shipping_fee) || 0;
+    const freeThreshold = Number(data.free_shipping_threshold) || 0;
+    if (fee <= 0) return null;
+    return { fee, freeThreshold };
+  },
+
+  // 小計から実際に適用される送料を計算する(表示専用。金額の正はサーバー側)
+  computeFee(subtotal, config) {
+    if (!config) return 0;
+    if (config.freeThreshold > 0 && subtotal >= config.freeThreshold) return 0;
+    return config.fee;
+  },
+
+  // 合計欄のHTML(小計/送料/合計の3行、または従来の合計1行)を組み立てる
+  buildTotalHtml(subtotal, config) {
+    if (!config) {
+      return `<p class="cart-total">合計 &yen;${subtotal.toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>`;
+    }
+    const fee = Shipping.computeFee(subtotal, config);
+    const total = subtotal + fee;
+    const shippingLabel =
+      fee === 0 && config.freeThreshold > 0
+        ? `&yen;0(&yen;${config.freeThreshold.toLocaleString('ja-JP')}以上で送料無料)`
+        : `&yen;${fee.toLocaleString('ja-JP')}`;
+    return `
+      <p class="cart-subtotal-row">小計 &yen;${subtotal.toLocaleString('ja-JP')}</p>
+      <p class="cart-shipping-row">送料 ${shippingLabel}</p>
+      <p class="cart-total">合計 &yen;${total.toLocaleString('ja-JP')}<span class="price__tax">(税込)</span></p>
+    `;
+  },
+};
+
+window.Shipping = Shipping;

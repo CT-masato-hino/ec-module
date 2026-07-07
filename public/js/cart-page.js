@@ -57,6 +57,11 @@ async function loadCart() {
     })
     .join('');
 
+  const shippingConfig = window.Shipping ? await window.Shipping.getConfig() : null;
+  const totalHtml = window.Shipping
+    ? window.Shipping.buildTotalHtml(total, shippingConfig)
+    : `<p class="cart-total">合計 &yen;${total.toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>`;
+
   contentEl.innerHTML = `
     <table class="cart-table">
       <thead>
@@ -64,7 +69,7 @@ async function loadCart() {
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="cart-total">合計 &yen;${total.toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>
+    ${totalHtml}
     <a class="button-primary" href="/checkout">レジに進む</a>
   `;
 

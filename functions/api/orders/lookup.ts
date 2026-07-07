@@ -42,6 +42,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       payment_method: order.payment_method,
       fulfillment_status: order.fulfillment_status,
       shipping_name: order.shipping_name,
+      shipping_fee: order.shipping_fee,
       shipping_postal_code: order.shipping_postal_code,
       shipping_address: order.shipping_address,
       shipping_phone: order.shipping_phone,

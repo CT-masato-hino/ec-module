@@ -38,13 +38,18 @@ async function loadOrderSummary() {
           </div>`
         : '';
 
+    const shippingFee = Number(order.shipping_fee) || 0;
+    const shippingRowHtml = shippingFee > 0 ? `<p class="order-summary__shipping-fee">送料: &yen;${shippingFee.toLocaleString('ja-JP')}</p>` : '';
+    const totalTaxLabel = shippingFee > 0 ? '(税込)' : '(税込・送料込み)';
+
     summaryEl.innerHTML = `
       <p class="order-summary__number">ご注文番号: ${escapeHtml(order.id)}</p>
       <table class="cart-table order-summary__items">
         <thead><tr><th>商品</th><th>単価×数量</th><th>小計</th></tr></thead>
         <tbody>${itemsRows}</tbody>
       </table>
-      <p class="cart-total">合計 &yen;${Number(order.amount_total).toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>
+      ${shippingRowHtml}
+      <p class="cart-total">合計 &yen;${Number(order.amount_total).toLocaleString('ja-JP')}<span class="price__tax">${totalTaxLabel}</span></p>
       ${order.shipping_name ? `<p class="order-summary__shipping">お届け先: ${escapeHtml(order.shipping_name)}様</p>` : ''}
       ${order.payment_status === 'unpaid' && order.payment_method !== 'bank_transfer' ? '<p class="order-summary__pending-payment">お支払いはまだ完了していません。ご入金が確認され次第、発送の準備を開始します。</p>' : ''}
       ${bankTransferHtml}

@@ -39,6 +39,9 @@ export interface OrderRow {
   fulfillment_status: string;
   user_id: string | null;
   payment_method: string;
+  stock_shortage: number;
+  stock_restored: number;
+  shipping_fee: number;
 }
 
 export interface OrderItemRow {
@@ -63,6 +66,7 @@ export interface CheckoutSessionRow {
   updated_at: string;
   user_id: string | null;
   payment_method: string;
+  shipping_fee: number;
 }
 
 export const FULFILLMENT_STATUSES = ['pending', 'processing', 'shipped', 'cancelled'] as const;

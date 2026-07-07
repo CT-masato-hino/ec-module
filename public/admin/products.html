@@ -13,6 +13,7 @@
     <a href="/admin"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>ホーム</a>
     <a href="/admin/products" class="is-active"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>商品</a>
     <a href="/admin/orders"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>注文</a>
+    <a href="/admin/images"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>画像</a>
   </nav>
   <div class="admin-sidebar__footer">
     <a href="#"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>設定</a>
@@ -65,6 +66,26 @@
           <option value="false">非公開</option>
         </select>
       </label>
+      <label>素材<input type="text" name="origin" placeholder="例: 綿100%"></label>
+      <label>サイズ<input type="text" name="capacity" placeholder="例: 幅30cm×高さ20cm"></label>
+      <label>発送目安<input type="text" name="shipping_note" placeholder="例: ご注文から3営業日以内に発送"></label>
+      <label>取扱注意<input type="text" name="storage_note" placeholder="例: 直射日光を避けて保管してください"></label>
+      <div class="admin-form-field">
+        <span class="admin-form-field__label">追加画像(最大7枚)</span>
+        <div id="extra-images-list" class="extra-images-list"></div>
+        <div id="extra-image-dropzone" class="image-dropzone image-dropzone--compact">
+          <div class="image-dropzone__placeholder">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <p>ドラッグ&ドロップで追加画像を追加する</p>
+            <button type="button" id="select-extra-image-button" class="admin-button-secondary">
+              <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              画像を選択
+            </button>
+          </div>
+          <p id="extra-image-upload-status" class="image-dropzone__status" hidden></p>
+        </div>
+        <input type="file" id="extra-image-file-input" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      </div>
       <div class="admin-form-actions">
         <button type="submit" id="form-submit" class="admin-button-primary">登録する</button>
         <button type="button" id="cancel-create-form" class="admin-button-secondary">キャンセル</button>

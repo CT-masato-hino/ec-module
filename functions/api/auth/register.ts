@@ -1,5 +1,6 @@
 import type { Env } from '../../lib/env';
 import { createUser, createSession, buildSessionCookie, getUserByEmail, isValidEmail } from '../../lib/user-auth';
+import { isUniqueConstraintError } from '../../lib/db';
 
 interface RegisterBody {
   email?: string;
@@ -31,7 +32,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return Response.json({ error: 'email_already_registered' }, { status: 400 });
   }
 
-  const user = await createUser(context.env.DB, { email, password, name });
+  // 事前チェックとINSERTの間に同一メールで登録されるレースが起き得るため、
+  // UNIQUE制約違反はここでも捕捉して400を返す(素通しすると500になってしまう)。
+  let user;
+  try {
+    user = await createUser(context.env.DB, { email, password, name });
+  } catch (err) {
+    if (isUniqueConstraintError(err)) {
+      return Response.json({ error: 'email_already_registered' }, { status: 400 });
+    }
+    throw err;
+  }
   const token = await createSession(context.env.DB, user.id);
 
   return Response.json(

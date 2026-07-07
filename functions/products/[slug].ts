@@ -1,5 +1,6 @@
 import type { Env } from '../lib/env';
 import { getActiveProductBySlug } from '../lib/db';
+import { getShippingConfig } from '../lib/shipping';
 
 function escapeHtml(value: string): string {
   return value
@@ -23,6 +24,7 @@ function renderPage(product: {
   storage_note: string | null;
   images: string[];
   stock: number | null;
+  priceTaxLabel: string;
 }): string {
   const name = escapeHtml(product.name);
   const description = product.description ? escapeHtml(product.description) : '';
@@ -89,7 +91,7 @@ function renderPage(product: {
   </div>
   <div class="product-detail__info">
     <h1>${name}</h1>
-    <p class="price">&yen;${product.price_display.toLocaleString('ja-JP')}<span class="price__tax">(税込・送料込み)</span></p>
+    <p class="price">&yen;${product.price_display.toLocaleString('ja-JP')}<span class="price__tax">${product.priceTaxLabel}</span></p>
     ${soldOutHtml}
     ${stockNoteHtml}
     <p class="description">${description}</p>
@@ -141,6 +143,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     images = [];
   }
 
+  const shippingConfig = getShippingConfig(context.env);
+  const priceTaxLabel = shippingConfig.fee > 0 ? '(税込)' : '(税込・送料込み)';
+
   const html = renderPage({
     id: product.id,
     slug: product.slug,
@@ -155,6 +160,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     storage_note: product.storage_note,
     images,
     stock: product.stock,
+    priceTaxLabel,
   });
 
   return new Response(html, {

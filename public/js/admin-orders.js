@@ -55,6 +55,13 @@ function fulfillmentBadgeHtml(status) {
   return `<span class="fulfillment-badge fulfillment-badge--${escapeHtml(status)}">${escapeHtml(label)}</span>`;
 }
 
+const STOCK_SHORTAGE_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+function stockShortageBadgeHtml() {
+  return `<span class="stock-shortage-badge">${STOCK_SHORTAGE_ICON}在庫不足</span>`;
+}
+
 function renderDetailRow(order) {
   const itemsRows = (order.items || [])
     .map(
@@ -94,6 +101,7 @@ function renderDetailRow(order) {
   return `
     <tr class="order-detail-row" data-detail-for="${escapeHtml(order.id)}">
       <td colspan="6">
+        ${order.stock_shortage ? `<p style="margin-top:0;">${stockShortageBadgeHtml()} 在庫が不足した状態で注文が成立しています。実在庫を確認してください。</p>` : ''}
         <h3 style="margin-top:0;font-size:13px;">対応状況を変更</h3>
         <div class="fulfillment-status-buttons">${statusButtonsHtml}</div>
         <h3 style="font-size:13px;">お支払い方法: ${escapeHtml(PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method)}</h3>
@@ -161,7 +169,7 @@ function renderOrders() {
       <td>${escapeHtml(order.ordered_at)}</td>
       <td>${escapeHtml(order.product_name)}</td>
       <td>¥${Number(order.amount_total).toLocaleString('ja-JP')}</td>
-      <td>${paymentBadgeHtml(order.payment_status)}</td>
+      <td>${paymentBadgeHtml(order.payment_status)}${order.stock_shortage ? stockShortageBadgeHtml() : ''}</td>
       <td>${fulfillmentBadgeHtml(order.fulfillment_status)}</td>
       <td>${escapeHtml(order.customer_email)}</td>
     `;

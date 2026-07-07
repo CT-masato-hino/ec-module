@@ -18,6 +18,12 @@ export interface SendEmailParams {
  * 例外が起きても購入フローを止めない(呼び出し側でtry-catchしなくてもここで吸収する)。
  */
 export async function sendEmail(env: Env, params: SendEmailParams): Promise<void> {
+  // 宛先が空の場合は送信もログ記録も行わない(不正な空リクエストで無駄なログを残さない)
+  if (!params.to) {
+    console.warn('sendEmail skipped: empty recipient', { emailType: params.emailType, orderId: params.orderId });
+    return;
+  }
+
   const db = env.DB;
   const logId = newId('elog');
   const now = nowIso();
@@ -94,12 +100,17 @@ export function buildOrderConfirmationEmail(params: {
   amountTotal: number;
   shippingName: string;
   paymentStatus: string;
+  shippingFee: number;
 }): { subject: string; text: string } {
   const itemLines = params.items
     .map((item) => `- ${item.productName} × ${item.quantity} = ¥${item.subtotal.toLocaleString('ja-JP')}`)
     .join('\n');
 
   const pendingNote = params.paymentStatus === 'unpaid' ? '\n\nお支払い確認後に発送します。' : '';
+
+  const hasShippingFee = params.shippingFee > 0;
+  const shippingLine = hasShippingFee ? `\n送料: ¥${params.shippingFee.toLocaleString('ja-JP')}` : '';
+  const totalLabel = hasShippingFee ? '(税込)' : '(税込・送料込み)';
 
   const text = `${params.shippingName} 様
 
@@ -108,9 +119,9 @@ export function buildOrderConfirmationEmail(params: {
 
 注文番号: ${params.orderId}
 
-${itemLines}
+${itemLines}${shippingLine}
 
-合計: ¥${params.amountTotal.toLocaleString('ja-JP')}(税込・送料込み)${pendingNote}
+合計: ¥${params.amountTotal.toLocaleString('ja-JP')}${totalLabel}${pendingNote}
 
 引き続きよろしくお願いいたします。`;
 
