@@ -9,6 +9,28 @@
       "Bash(npx wrangler d1 execute ec_db --local:*)",
       "Bash(curl -s http://localhost:8788/*)",
       "Bash(curl -s -u admin:admin1234 http://localhost:8788/*)"
+    ],
+    "deny": [
+      "Read(.env*)",
+      "Read(.dev.vars)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/secrets/**)",
+      "Read(**/credentials*)",
+      "Bash(curl * | sh*)",
+      "Bash(*--dangerously-skip-permissions*)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard origin*)",
+      "Bash(*DROP TABLE*)",
+      "Bash(*DROP DATABASE*)",
+      "Bash(*TRUNCATE*)",
+      "Bash(npx wrangler d1 * --remote*)",
+      "Bash(npm run db:migrations:apply:remote*)",
+      "Bash(npm run data:clear:remote*)",
+      "Bash(npm run deploy*)"
     ]
   }
 }

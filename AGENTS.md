@@ -46,7 +46,7 @@ migrations/0001_init.sql          スキーマ+seed(1本に統合済み)
 migrations/0002_members_email.sql users/sessions/email_logsテーブル、orders/checkout_sessionsへの列追加
 wrangler.toml      D1バインディング(DB)、[vars]にADMIN_USERNAME/PASSWORD、PAYMENT_METHODS等
 .dev.vars          ローカル用シークレット(.dev.vars.exampleからコピー)
-docs/COMPARISON.md BASE/Shopifyとの費用・機能比較(提案資料の素材)
+docs/01-requirements/COMPARISON.md BASE/Shopifyとの費用・機能比較(提案資料の素材)
 ```
 
 ## 開発コマンド

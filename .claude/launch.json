@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 8788
+    },
+    {
+      "name": "docs-viewer",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["tools/docs_viewer.py", "--port", "8766"],
+      "port": 8766
     }
   ]
 }

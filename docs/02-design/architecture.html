@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!--
+  正本は docs/02-design/architecture.md（Mermaid 2図）。
+  本ファイルは人間承認用の一方向生成ビュー。直接編集せず、正本更新時に再生成する。
+  レイアウト方式: 手配置インラインSVG（入れ子コンテナ・実矢印・凡例）。CDN・Mermaid.js不使用。
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アーキテクチャ・インフラ構成図（承認ビュー）</title>
+<style>
+  :root {
+    --ink:#37352f; --sub:#787774; --line:rgba(55,53,47,.14); --line-soft:rgba(55,53,47,.08);
+    --bg:#fbfbfa; --card:#fff; --accent:#2383e2;
+    --ext:#1c7f4e; --warn:#9a6700; --store:#6b5b95;
+    --shadow:0 1px 2px rgba(15,15,15,.04),0 2px 6px rgba(15,15,15,.04); --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 32px 64px;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.6;font-size:14px}
+  .page{max-width:1240px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 12px;font-weight:700}
+  h2{font-size:16px;font-weight:700;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line-soft)}
+  .meta{color:var(--sub);font-size:13px;background:var(--card);border:1px solid var(--line-soft);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;margin-bottom:8px}
+  .banner{background:#e7f1fc;border-radius:var(--radius);padding:12px 16px;font-size:13px;margin:14px 0}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  figure{margin:0;background:var(--card);border:1px solid var(--line-soft);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:10px;overflow-x:auto}
+  svg{display:block;width:100%;height:auto;min-width:900px}
+  svg text{font-family:"Inter","Hiragino Sans","Noto Sans JP",sans-serif;fill:var(--ink)}
+  .cont-h{font-size:13px;font-weight:700}
+  .nd{font-size:12.5px}
+  .nds{font-size:11px;fill:var(--sub)}
+  .lbl{font-size:11px;fill:var(--sub);stroke:#fff;stroke-width:4;paint-order:stroke}
+  .note{color:var(--sub);font-size:12px;margin-top:36px;padding-top:14px;border-top:1px solid var(--line-soft)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>アーキテクチャ・インフラ構成図（人間承認用ビュー）</h1>
+<div class="meta">
+  正本: <a href="architecture.md">docs/02-design/architecture.md</a>（Mermaid 2図）／
+  関連: <a href="basic-design.md">基本設計書</a> ／ 影響ID: Q-001（本番展開当面なし）
+</div>
+<div class="banner">
+  このページはMermaid正本からの<strong>一方向生成ビュー</strong>です。直接編集せず、正本更新時に再生成してください。
+  レビュー観点: 本番TODO（点線）がQ-001解決時の作業一覧として正しいか／単一Pagesプロジェクト構成（パターンA前提）でよいか。
+</div>
+
+<h2>1. アーキテクチャ構成図（論理）</h2>
+<figure>
+<svg viewBox="0 0 1180 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="aa1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#57564f"/></marker>
+    <marker id="aag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#1c7f4e"/></marker>
+  </defs>
+
+  <!-- browser container -->
+  <rect x="70" y="30" width="710" height="160" rx="12" fill="#fbfbfa" stroke="#b9b8b4"/>
+  <text class="cont-h" x="94" y="58">ブラウザ</text>
+  <rect x="110" y="80" width="300" height="76" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="260" y="112" text-anchor="middle" font-weight="700">静的HTML/JS</text>
+  <text class="nds" x="260" y="132" text-anchor="middle">ストアフロント＋管理画面（public/）</text>
+  <rect x="450" y="80" width="300" height="76" rx="8" fill="#fff" stroke="#b9b8b4" stroke-dasharray="4 3"/>
+  <text class="nd" x="600" y="112" text-anchor="middle" font-weight="700">localStorage（カート）</text>
+  <text class="nds" x="600" y="132" text-anchor="middle">product_id＋quantityのみ・価格は持たない</text>
+
+  <!-- pages container -->
+  <rect x="70" y="260" width="710" height="420" rx="12" fill="#fff" stroke="#57564f" stroke-width="1.6"/>
+  <text class="cont-h" x="94" y="290">Cloudflare Pages プロジェクト</text>
+  <rect x="110" y="312" width="200" height="52" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="210" y="343" text-anchor="middle">静的配信（public/）</text>
+  <rect x="340" y="312" width="240" height="52" rx="8" fill="#fbf3db" stroke="#9a6700"/>
+  <text class="nd" x="460" y="334" text-anchor="middle" font-weight="700">Basic認証 middleware</text>
+  <text class="nds" x="460" y="352" text-anchor="middle">/admin/*・/api/admin/*（開発用）</text>
+
+  <!-- functions sub-container -->
+  <rect x="110" y="396" width="630" height="250" rx="10" fill="#fbfbfa" stroke="#b9b8b4"/>
+  <text class="cont-h" x="132" y="424" fill="#57564f">Pages Functions（TypeScript strict）</text>
+  <rect x="140" y="444" width="170" height="60" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="225" y="468" text-anchor="middle" font-weight="700">SSR</text>
+  <text class="nds" x="225" y="486" text-anchor="middle">商品詳細・モック決済画面</text>
+  <rect x="330" y="444" width="170" height="60" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="415" y="468" text-anchor="middle" font-weight="700">API</text>
+  <text class="nds" x="415" y="486" text-anchor="middle">checkout / auth / admin 等</text>
+  <rect x="520" y="444" width="190" height="60" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="615" y="468" text-anchor="middle" font-weight="700">Webhookハンドラ</text>
+  <text class="nds" x="615" y="486" text-anchor="middle">署名検証＋冪等</text>
+  <rect x="140" y="556" width="570" height="60" rx="8" fill="#fff" stroke="#57564f"/>
+  <text class="nd" x="425" y="580" text-anchor="middle" font-weight="700">lib</text>
+  <text class="nds" x="425" y="598" text-anchor="middle">orders（冪等・在庫整合）／ payment ／ email ／ user-auth ／ db</text>
+
+  <!-- data stores -->
+  <g>
+    <path d="M150 762 V830 A90 14 0 0 0 330 830 V762" fill="#f3f0fa" stroke="#6b5b95"/>
+    <ellipse cx="240" cy="762" rx="90" ry="14" fill="#f3f0fa" stroke="#6b5b95"/>
+    <text class="nd" x="240" y="800" text-anchor="middle" fill="#6b5b95" font-weight="700">D1（SQLite）</text>
+    <text class="nds" x="240" y="818" text-anchor="middle">価格・在庫の唯一の正</text>
+    <path d="M430 762 V830 A90 14 0 0 0 610 830 V762" fill="#f3f0fa" stroke="#6b5b95"/>
+    <ellipse cx="520" cy="762" rx="90" ry="14" fill="#f3f0fa" stroke="#6b5b95"/>
+    <text class="nd" x="520" y="800" text-anchor="middle" fill="#6b5b95" font-weight="700">R2（IMAGES）</text>
+    <text class="nds" x="520" y="818" text-anchor="middle">商品画像</text>
+  </g>
+
+  <!-- external services -->
+  <rect x="880" y="430" width="240" height="70" rx="12" fill="#dbeddb" stroke="#1c7f4e"/>
+  <text class="nd" x="1000" y="458" text-anchor="middle" fill="#1c7f4e" font-weight="700">Stripe Checkout / Webhook</text>
+  <text class="nds" x="1000" y="478" text-anchor="middle">ダミーキー時はモック決済モード</text>
+  <rect x="880" y="560" width="240" height="70" rx="12" fill="#dbeddb" stroke="#1c7f4e"/>
+  <text class="nd" x="1000" y="588" text-anchor="middle" fill="#1c7f4e" font-weight="700">Resend（メール）</text>
+  <text class="nds" x="1000" y="608" text-anchor="middle">ダミーキー時はemail_logs記録のみ</text>
+
+  <!-- arrows -->
+  <g fill="none" stroke="#57564f" stroke-width="1.4">
+    <path d="M210 156 V312" marker-end="url(#aa1)"/>
+    <path d="M310 156 V240 H415 V444" marker-end="url(#aa1)"/>
+    <path d="M225 504 V556" marker-end="url(#aa1)"/>
+    <path d="M415 504 V556" marker-end="url(#aa1)"/>
+    <path d="M615 504 V556" marker-end="url(#aa1)"/>
+    <path d="M300 616 V748" marker-end="url(#aa1)"/>
+    <path d="M520 616 V748" marker-end="url(#aa1)"/>
+    <path d="M500 444 V380 H1000 V430" marker-end="url(#aa1)"/>
+    <path d="M710 598 H880" marker-end="url(#aa1)"/>
+  </g>
+  <g fill="none" stroke="#1c7f4e" stroke-width="1.4" stroke-dasharray="6 4">
+    <path d="M880 474 H710" marker-end="url(#aag)"/>
+  </g>
+
+  <!-- labels -->
+  <text class="lbl" x="222" y="240">ページ取得</text>
+  <text class="lbl" x="322" y="235">fetch /api/*</text>
+  <text class="lbl" x="312" y="700">SQL（batch・ガード付きUPDATE）</text>
+  <text class="lbl" x="532" y="700">画像 保存/配信</text>
+  <text class="lbl" x="560" y="372">実キー時 sessions.create</text>
+  <text class="lbl" x="746" y="466">イベント配送（署名つき）</text>
+  <text class="lbl" x="750" y="590">waitUntil・実キー時のみ</text>
+</svg>
+</figure>
+
+<h2>2. インフラ（サービス）構成図 — 現状とQ-001解決時の本番TODO</h2>
+<figure>
+<svg viewBox="0 0 1180 560" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ab1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#57564f"/></marker>
+    <marker id="abg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#9b9a97"/></marker>
+  </defs>
+
+  <!-- current panel -->
+  <rect x="30" y="40" width="520" height="470" rx="12" fill="#fff" stroke="#57564f" stroke-width="1.6"/>
+  <text class="cont-h" x="54" y="72">現状: ローカル開発のみ</text>
+  <rect x="330" y="54" width="200" height="24" rx="12" fill="#dbeddb"/>
+  <text class="nds" x="430" y="70" text-anchor="middle" fill="#1c7f4e" font-weight="700">モック決済で全導線検証可</text>
+
+  <rect x="70" y="110" width="440" height="64" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="290" y="136" text-anchor="middle" font-weight="700">wrangler pages dev（http://localhost:8788）</text>
+  <text class="nds" x="290" y="156" text-anchor="middle">npm run dev ／ 初期化は npm run init に一本化</text>
+  <rect x="70" y="230" width="200" height="64" rx="8" fill="#f3f0fa" stroke="#6b5b95"/>
+  <text class="nd" x="170" y="256" text-anchor="middle" fill="#6b5b95" font-weight="700">ローカルD1</text>
+  <text class="nds" x="170" y="276" text-anchor="middle">.wrangler/state</text>
+  <rect x="310" y="230" width="200" height="64" rx="8" fill="#f3f0fa" stroke="#6b5b95"/>
+  <text class="nd" x="410" y="256" text-anchor="middle" fill="#6b5b95" font-weight="700">R2シミュレート</text>
+  <text class="nds" x="410" y="276" text-anchor="middle">wranglerが代替</text>
+  <rect x="70" y="360" width="440" height="64" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="290" y="386" text-anchor="middle" font-weight="700">Vitest（workers pool）＋ E2Eスモーク</text>
+  <text class="nds" x="290" y="406" text-anchor="middle">migrations自動適用 ／ devサーバー実起動で購入導線検証</text>
+
+  <g fill="none" stroke="#57564f" stroke-width="1.4">
+    <path d="M170 174 V230" marker-end="url(#ab1)"/>
+    <path d="M410 174 V230" marker-end="url(#ab1)"/>
+  </g>
+  <g fill="none" stroke="#9b9a97" stroke-width="1.4" stroke-dasharray="5 4">
+    <path d="M170 360 V294" marker-end="url(#abg)"/>
+  </g>
+  <text class="lbl" x="180" y="330">テスト用DB（自動適用）</text>
+
+  <!-- production TODO panel -->
+  <rect x="630" y="40" width="520" height="470" rx="12" fill="#fbfbfa" stroke="#9b9a97" stroke-width="1.6" stroke-dasharray="8 5"/>
+  <text class="cont-h" x="654" y="72" fill="#57564f">本番構成（未適用）</text>
+  <rect x="950" y="54" width="180" height="24" rx="12" fill="#fbf3db"/>
+  <text class="nds" x="1040" y="70" text-anchor="middle" fill="#9a6700" font-weight="700">未適用（Q-001）</text>
+
+  <rect x="670" y="110" width="440" height="64" rx="8" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="890" y="136" text-anchor="middle" font-weight="700">Cloudflare Pages（shop.example.com 想定）</text>
+  <text class="nds" x="890" y="156" text-anchor="middle">組み込みはサブドメイン分離＝パターンA前提</text>
+  <rect x="670" y="230" width="200" height="64" rx="8" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="770" y="256" text-anchor="middle" font-weight="700">D1 本番</text>
+  <text class="nds" x="770" y="276" text-anchor="middle">database_id差し替え</text>
+  <rect x="910" y="230" width="200" height="64" rx="8" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="1010" y="256" text-anchor="middle" font-weight="700">R2 ec-images</text>
+  <text class="nds" x="1010" y="276" text-anchor="middle">IMAGESバインディング</text>
+  <rect x="670" y="330" width="200" height="64" rx="8" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="770" y="356" text-anchor="middle" font-weight="700">Cloudflare Access</text>
+  <text class="nds" x="770" y="376" text-anchor="middle">/admin/* 保護</text>
+  <rect x="910" y="330" width="200" height="64" rx="8" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="1010" y="356" text-anchor="middle" font-weight="700">Pages Secrets</text>
+  <text class="nds" x="1010" y="376" text-anchor="middle">実Stripe/Resendキー</text>
+  <rect x="670" y="430" width="440" height="56" rx="8" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="890" y="453" text-anchor="middle" font-weight="700">Cache Rules</text>
+  <text class="nds" x="890" y="472" text-anchor="middle">/api/* ・ /admin/* ・ /checkout/* をキャッシュ除外</text>
+
+  <g fill="none" stroke="#9b9a97" stroke-width="1.4" stroke-dasharray="5 4">
+    <path d="M770 174 V230" marker-end="url(#abg)"/>
+    <path d="M1010 174 V230" marker-end="url(#abg)"/>
+    <path d="M770 294 V330" marker-end="url(#abg)"/>
+    <path d="M1010 294 V330" marker-end="url(#abg)"/>
+    <path d="M890 394 V430" marker-end="url(#abg)"/>
+  </g>
+
+  <!-- transition arrow -->
+  <g fill="none" stroke="#57564f" stroke-width="1.8">
+    <path d="M550 275 H630" marker-end="url(#ab1)"/>
+  </g>
+  <text class="lbl" x="552" y="262">実案件組み込み時</text>
+  <text class="lbl" x="544" y="300">本番適用は人間のみ</text>
+</svg>
+</figure>
+
+<div class="note">
+  実線=適用済みの現状 ／ 点線=未適用の本番TODO（Q-001解決時にAGENTS.md本番前チェックリストと突合）。
+  紫=データストア、緑=外部サービス、アンバー=認証境界。本ビューはMermaid正本と同じ構成要素で作図している。
+</div>
+
+</div>
+</body>
+</html>

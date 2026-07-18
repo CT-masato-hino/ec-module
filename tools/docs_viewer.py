@@ -1,0 +1,475 @@
+#!/usr/bin/env python3
+"""docs/ 配下をブラウズする人間レビュー用ローカルWebビューア。
+
+ファイル管理アプリ風UI（左: ツリー / 右: プレビュー）で、Markdownはレンダリング表示
+（Mermaid対応）、HTML成果物（モック・計画図・スライド）はそのままレンダリングする。
+ビューアは読み取り専用。正本はあくまで docs/ 配下の Markdown / HTML（二重正本を作らない）。
+
+使い方:
+  ローカル起動（デフォルト: ./docs を 127.0.0.1:8765 で配信）
+    python3 tools/docs_viewer.py
+    python3 tools/docs_viewer.py --root docs --port 8765
+
+  GitHub Pages 向け静的ビルド（allowlist 必須・デフォルト非公開）
+    python3 tools/docs_viewer.py --build --allowlist docs/publish-allowlist.txt --out site
+
+  allowlist の書式: 1行1パターン（root からの相対グロブ）。# はコメント。
+    例)
+      # 顧客レビュー用に公開してよいものだけを明示する
+      basic-design/mockups/*.html
+      requirements/functional-list.md
+
+公開統制（重要）: docs/ には個人情報・顧客情報・秘密情報が含まれうる。
+静的ビルドは allowlist に明示されたファイルだけを含める（allowlist なしではビルド不可）。
+Markdown / Mermaid のレンダリングに CDN（jsdelivr の marked / mermaid）を使うため、
+プレビューにはネットワーク接続が必要（文書内容自体が外部送信されることはない）。
+"""
+
+import argparse
+import fnmatch
+import json
+import mimetypes
+import shutil
+import sys
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
+from urllib.parse import unquote, urlparse
+
+VIEW_EXTS = {
+    ".md", ".markdown", ".html", ".htm", ".svg", ".png", ".jpg", ".jpeg",
+    ".gif", ".webp", ".pdf", ".csv", ".txt", ".mmd",
+}
+
+INDEX_HTML = r"""<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>docs viewer</title>
+<style>
+  :root { --line:rgba(55,53,47,.14); --line-soft:rgba(55,53,47,.08); --bg:#f7f7f5;
+          --ink:#37352f; --sub:#787774; --accent:#2383e2; --sel:rgba(35,131,226,.1);
+          --hover:rgba(55,53,47,.06); }
+  * { box-sizing:border-box; }
+  body { margin:0; height:100vh; display:flex; flex-direction:column; color:var(--ink);
+         font-family:"Inter","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+         -webkit-font-smoothing:antialiased; }
+  header { padding:10px 18px; border-bottom:1px solid var(--line-soft); background:#fff;
+           display:flex; align-items:baseline; gap:12px; }
+  header h1 { font-size:14px; font-weight:600; margin:0; }
+  header .sub { font-size:12px; color:var(--sub); }
+  main { flex:1; display:flex; min-height:0; }
+  #tree { width:280px; min-width:200px; overflow:auto; border-right:1px solid var(--line-soft);
+          background:var(--bg); padding:10px 6px; font-size:13.5px; }
+  #view { flex:1; overflow:auto; background:#fff; }
+  .dir > .label { font-weight:500; color:var(--sub); cursor:pointer; border-radius:6px;
+                  padding:3px 8px; display:flex; align-items:center; gap:2px; }
+  .dir > .label:hover { background:var(--hover); }
+  .dir > .label::before { content:"▸"; display:inline-block; width:16px; text-align:center;
+                          font-size:10px; color:var(--sub); transition:transform .12s ease; }
+  .dir.open > .label::before { transform:rotate(90deg); }
+  .dir > .children { display:none; }
+  .dir.open > .children { display:block; }
+  .node { padding:1px 0; }
+  .indent { padding-left:14px; }
+  .file { cursor:pointer; border-radius:6px; padding:3px 8px 3px 24px; color:var(--ink);
+          display:flex; align-items:center; gap:6px; white-space:nowrap; overflow:hidden;
+          text-overflow:ellipsis; }
+  .file:hover { background:var(--hover); }
+  .file.selected { background:var(--sel); color:var(--accent); font-weight:600; }
+  .file .icon { flex:none; width:14px; height:14px; color:#9b9a97; }
+  .file .icon svg { width:100%; height:100%; display:block; }
+  .file.selected .icon { color:var(--accent); }
+  .file .ext { color:var(--sub); font-size:11px; margin-left:4px; }
+  #content { max-width:880px; margin:0 auto; padding:40px 48px 80px; line-height:1.75;
+             font-size:15px; }
+  #content h1,#content h2,#content h3 { line-height:1.35; font-weight:700; }
+  #content h1 { font-size:1.9em; border-bottom:1px solid var(--line-soft); padding-bottom:8px; }
+  #content h2 { font-size:1.4em; margin-top:1.8em; }
+  #content h3 { font-size:1.15em; }
+  #content a { color:var(--accent); }
+  #content hr { border:none; border-top:1px solid var(--line-soft); margin:2em 0; }
+  #content table { border-collapse:separate; border-spacing:0; font-size:13.5px; width:100%;
+                   border:1px solid var(--line-soft); border-radius:8px; overflow:hidden; }
+  #content th,#content td { border:none; border-bottom:1px solid var(--line-soft); padding:8px 12px;
+                            text-align:left; vertical-align:top; }
+  #content tr:last-child td { border-bottom:none; }
+  #content th { background:var(--bg); font-weight:600; font-size:12.5px; color:var(--sub); }
+  #content tbody tr:hover td { background:#fafaf9; }
+  #content pre { background:#f7f6f3; padding:14px 16px; border-radius:8px; overflow:auto;
+                 font-size:13px; line-height:1.6; }
+  #content code { background:rgba(135,131,120,.15); color:#c25243; padding:1px 5px;
+                  border-radius:4px; font-size:0.88em; }
+  #content pre code { background:none; color:inherit; padding:0; }
+  #content img { max-width:100%; border-radius:6px; }
+  #content blockquote { border-left:3px solid var(--ink); margin-left:0; padding:2px 0 2px 16px;
+                        color:var(--sub); }
+  iframe.htmlview { width:100%; height:100%; border:0; }
+  .placeholder { color:var(--sub); padding:80px 40px; text-align:center; font-size:14px; }
+  .placeholder::before { content:""; display:block; width:36px; height:36px; margin:0 auto 12px;
+    background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%239b9a97" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>') center / contain no-repeat; }
+  .crumb { font-size:12px; color:var(--sub); padding:9px 18px; border-bottom:1px solid var(--line-soft);
+           background:rgba(255,255,255,.92); backdrop-filter:blur(4px); position:sticky; top:0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>docs viewer</h1>
+  <span class="sub">レビュー用ビューア（読み取り専用・正本は docs/ 配下のファイル）</span>
+</header>
+<main>
+  <nav id="tree"></nav>
+  <section id="view"><div class="placeholder">左のツリーからファイルを選択してください</div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+const CONFIG = __CONFIG__;
+mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+// 拡張子ごとの表示アイコン（見た目のみ。機能には影響しない）
+// モノクロのインラインSVG（stroke=currentColor）。絵文字は使わない
+const ICON_PATHS = {
+  doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+  code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+  table: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>',
+  diagram: '<circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 6h6a3 3 0 0 1 3 3v6"/>',
+};
+const FILE_ICONS = {
+  ".md": "doc", ".markdown": "doc", ".txt": "doc", ".pdf": "doc",
+  ".html": "code", ".htm": "code",
+  ".svg": "image", ".png": "image", ".jpg": "image", ".jpeg": "image", ".gif": "image", ".webp": "image",
+  ".csv": "table", ".mmd": "diagram",
+};
+function fileIcon(name) {
+  const ext = name.slice(name.lastIndexOf(".")).toLowerCase();
+  const paths = ICON_PATHS[FILE_ICONS[ext] || "file"];
+  const span = el("span", "icon");
+  span.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + paths + "</svg>";
+  return span;
+}
+
+function buildTree(node, container, depth) {
+  (node.dirs || []).forEach(d => {
+    const wrap = el("div", "dir node indent" + (depth < 1 ? " open" : ""));
+    const label = el("div", "label", d.name);
+    label.onclick = () => wrap.classList.toggle("open");
+    wrap.appendChild(label);
+    const children = el("div", "children");
+    wrap.appendChild(children);
+    buildTree(d, children, depth + 1);
+    container.appendChild(wrap);
+  });
+  (node.files || []).forEach(f => {
+    const item = el("div", "file node indent");
+    item.appendChild(fileIcon(f.name));
+    item.appendChild(document.createTextNode(f.name));
+    item.dataset.path = f.path;
+    item.onclick = () => select(item, f.path);
+    container.appendChild(item);
+  });
+}
+
+function select(item, path) {
+  document.querySelectorAll(".file.selected").forEach(x => x.classList.remove("selected"));
+  if (item) item.classList.add("selected");
+  render(path);
+}
+
+async function render(path) {
+  const view = document.getElementById("view");
+  const url = CONFIG.rawBase + path.split("/").map(encodeURIComponent).join("/");
+  const ext = path.slice(path.lastIndexOf(".")).toLowerCase();
+  view.innerHTML = "";
+  view.appendChild(Object.assign(el("div", "crumb"), { textContent: path }));
+  if (ext === ".html" || ext === ".htm" || ext === ".pdf") {
+    const frame = el("iframe", "htmlview");
+    frame.src = url;
+    view.appendChild(frame);
+    view.style.overflow = "hidden";
+    return;
+  }
+  view.style.overflow = "auto";
+  const content = el("div");
+  content.id = "content";
+  view.appendChild(content);
+  if ([".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp"].includes(ext)) {
+    const img = el("img");
+    img.src = url;
+    content.appendChild(img);
+    return;
+  }
+  const res = await fetch(url);
+  if (!res.ok) { content.textContent = "読み込みに失敗しました: " + res.status; return; }
+  const text = await res.text();
+  if (ext === ".md" || ext === ".markdown" || ext === ".mmd" || ext === ".txt" || ext === ".csv") {
+    if (ext === ".txt" || ext === ".csv") {
+      const pre = el("pre", null, text);
+      content.appendChild(pre);
+      return;
+    }
+    const src = ext === ".mmd" ? "```mermaid\n" + text + "\n```" : text;
+    content.innerHTML = marked.parse(src);
+    const blocks = content.querySelectorAll("pre code.language-mermaid");
+    let i = 0;
+    for (const code of blocks) {
+      const div = el("div", "mermaid");
+      div.id = "mmd-" + (i++);
+      div.textContent = code.textContent;
+      code.closest("pre").replaceWith(div);
+    }
+    if (i > 0) { try { await mermaid.run({ querySelector: ".mermaid" }); } catch (e) { console.warn(e); } }
+  }
+}
+
+fetch(CONFIG.treeUrl).then(r => r.json()).then(tree => {
+  const nav = document.getElementById("tree");
+  buildTree(tree, nav, 0);
+  // 計画図があればトップページとして開く
+  const plan = document.querySelector('.file[data-path="project-plan.html"]');
+  if (plan) select(plan, "project-plan.html");
+});
+</script>
+</body>
+</html>
+"""
+
+
+def build_tree(root: Path, allow=None):
+    """root 配下の表示対象ファイルをツリー（dict）にする。allow は相対パスの許可判定関数。"""
+
+    def walk(d: Path):
+        node = {"name": d.name, "dirs": [], "files": []}
+        try:
+            entries = sorted(d.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
+        except PermissionError:
+            return node
+        for p in entries:
+            if p.name.startswith("."):
+                continue
+            if p.is_dir():
+                child = walk(p)
+                if child["dirs"] or child["files"]:
+                    node["dirs"].append(child)
+            elif p.suffix.lower() in VIEW_EXTS:
+                rel = p.relative_to(root).as_posix()
+                if allow is None or allow(rel):
+                    node["files"].append({"name": p.name, "path": rel})
+        return node
+
+    return walk(root)
+
+
+# 案件リポジトリ向けテーラリング: /raw/ へのブラウザ直接遷移（Accept: text/html）で
+# Markdownを開いたとき、ダウンロードさせずにレンダリングして表示するページ。
+# 生成ビュー（deliverables-index.html等）内のリンクからの遷移で使われる。
+MD_RENDER_PAGE = """<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITLE__</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  body{margin:0;padding:32px 24px 64px;background:#fbfbfa;color:#37352f;
+    font-family:"Inter","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.7;font-size:15px}
+  .page{max-width:900px;margin:0 auto}
+  .crumb{color:#787774;font-size:12px;margin-bottom:16px;display:flex;gap:12px;align-items:center}
+  .crumb a{color:#2383e2;text-decoration:none}
+  #content h1,#content h2,#content h3{line-height:1.4}
+  #content h2{border-bottom:1px solid rgba(55,53,47,.09);padding-bottom:6px}
+  #content table{border-collapse:collapse;font-size:13px;display:block;overflow-x:auto}
+  #content th,#content td{border:1px solid rgba(55,53,47,.16);padding:6px 10px;text-align:left}
+  #content th{background:#f7f7f5}
+  #content code{background:#efefed;border-radius:4px;padding:1px 5px;font-size:13px}
+  #content pre code{display:block;padding:12px;overflow-x:auto}
+  #content blockquote{margin:0;padding:2px 16px;border-left:3px solid rgba(55,53,47,.16);color:#57564f;background:#f7f7f5}
+  #content a{color:#2383e2}
+  .mermaid{background:#fff;border:1px solid rgba(55,53,47,.09);border-radius:8px;padding:12px;margin:12px 0}
+</style></head>
+<body><div class="page">
+<div class="crumb"><a href="/">← ビューアのトップへ</a><span>__TITLE__</span></div>
+<div id="content">読み込み中…</div>
+<script>
+(async () => {
+  const res = await fetch(location.pathname, { headers: { "Accept": "text/plain" } });
+  const text = await res.text();
+  const content = document.getElementById("content");
+  const src = location.pathname.endsWith(".mmd") ? "```mermaid\\n" + text + "\\n```" : text;
+  content.innerHTML = marked.parse(src);
+  const blocks = content.querySelectorAll("pre code.language-mermaid");
+  let i = 0;
+  for (const code of blocks) {
+    const div = document.createElement("div");
+    div.className = "mermaid"; div.id = "mmd-" + (i++);
+    div.textContent = code.textContent;
+    code.closest("pre").replaceWith(div);
+  }
+  mermaid.initialize({ startOnLoad: false, securityLevel: "loose" });
+  if (i > 0) { try { await mermaid.run({ querySelector: ".mermaid" }); } catch (e) { console.warn(e); } }
+})();
+</script>
+</div></body></html>
+"""
+
+MD_EXTS = {".md", ".markdown", ".mmd"}
+
+
+def safe_resolve(root: Path, rel: str):
+    """パストラバーサルを防いで root 配下の実ファイルを返す。範囲外は None。"""
+    target = (root / rel).resolve()
+    try:
+        target.relative_to(root.resolve())
+    except ValueError:
+        return None
+    return target if target.is_file() else None
+
+
+def make_handler(root: Path):
+    index = INDEX_HTML.replace("__CONFIG__", json.dumps({"treeUrl": "/api/tree", "rawBase": "/raw/"}))
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802 (http.server の規約)
+            path = unquote(urlparse(self.path).path)
+            if path in ("/", "/index.html"):
+                self._send(200, "text/html; charset=utf-8", index.encode("utf-8"))
+            elif path == "/api/tree":
+                body = json.dumps(build_tree(root), ensure_ascii=False).encode("utf-8")
+                self._send(200, "application/json; charset=utf-8", body)
+            elif path.startswith("/raw/"):
+                target = safe_resolve(root, path[len("/raw/"):])
+                if target is None:
+                    self._send(404, "text/plain; charset=utf-8", b"not found")
+                    return
+                suffix = target.suffix.lower()
+                accept = self.headers.get("Accept", "")
+                # ブラウザの直接遷移（リンククリック）ならMarkdownをレンダリングして返す。
+                # SPA・本ページ内のfetch（Accept: */* / text/plain）には従来どおり生テキストを返す
+                if suffix in MD_EXTS and "text/html" in accept:
+                    body = MD_RENDER_PAGE.replace("__TITLE__", target.name).encode("utf-8")
+                    self._send(200, "text/html; charset=utf-8", body)
+                    return
+                ctype = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
+                if suffix in MD_EXTS or suffix == ".txt":
+                    ctype = "text/plain"  # ダウンロードさせない（octet-stream回避）
+                if ctype.startswith("text/") or ctype in ("application/json",):
+                    ctype += "; charset=utf-8"
+                self._send(200, ctype, target.read_bytes())
+            else:
+                self._send(404, "text/plain; charset=utf-8", b"not found")
+
+        def _send(self, code, ctype, body):
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            # ローカルレビュー用。キャッシュで古い成果物を見せない
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, fmt, *args):
+            sys.stderr.write("[docs-viewer] %s\n" % (fmt % args))
+
+    return Handler
+
+
+def serve(root: Path, host: str, port: int):
+    httpd = HTTPServer((host, port), make_handler(root))
+    print(f"docs viewer: http://{host}:{port}/  (root: {root})")
+    print("停止は Ctrl+C")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+
+def load_allowlist(path: Path):
+    patterns = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            patterns.append(line)
+    return patterns
+
+
+def build_site(root: Path, out: Path, allowlist: Path):
+    """GitHub Pages 向け静的サイトを生成する。allowlist に一致するファイルのみ含める。"""
+    patterns = load_allowlist(allowlist)
+    if not patterns:
+        print("エラー: allowlist が空です。公開してよい成果物を明示してください（デフォルト非公開）。", file=sys.stderr)
+        return 1
+
+    def allow(rel: str):
+        return any(fnmatch.fnmatch(rel, pat) for pat in patterns)
+
+    tree = build_tree(root, allow=allow)
+
+    def collect(node, acc):
+        for f in node["files"]:
+            acc.append(f["path"])
+        for d in node["dirs"]:
+            collect(d, acc)
+        return acc
+
+    files = collect(tree, [])
+    if not files:
+        print("エラー: allowlist に一致するファイルがありません。ビルドを中止します。", file=sys.stderr)
+        return 1
+
+    out.mkdir(parents=True, exist_ok=True)
+    for rel in files:
+        dst = out / "files" / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(root / rel, dst)
+    (out / "tree.json").write_text(json.dumps(tree, ensure_ascii=False), encoding="utf-8")
+    index = INDEX_HTML.replace("__CONFIG__", json.dumps({"treeUrl": "tree.json", "rawBase": "files/"}))
+    (out / "index.html").write_text(index, encoding="utf-8")
+
+    print(f"静的サイトを生成しました: {out}（{len(files)}ファイル）")
+    print("含めたファイル:")
+    for rel in files:
+        print(f"  - {rel}")
+    print("\n公開前チェック: 上記に個人情報・顧客情報・秘密情報が含まれていないか必ず目視確認すること。")
+    print("private リポジトリの Pages 可視性設定（公開範囲）にも注意。")
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description="docs/ レビュー用ローカルWebビューア")
+    ap.add_argument("--root", default="docs", help="表示対象ディレクトリ（デフォルト: docs）")
+    ap.add_argument("--host", default="127.0.0.1", help="バインド先（デフォルト: 127.0.0.1）")
+    ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--build", action="store_true", help="GitHub Pages 向け静的ビルド")
+    ap.add_argument("--out", default="site", help="ビルド出力先（デフォルト: site）")
+    ap.add_argument("--allowlist", help="公開ファイルのallowlist（--build 時は必須）")
+    args = ap.parse_args()
+
+    root = Path(args.root)
+    if not root.is_dir():
+        print(f"エラー: root が見つかりません: {root}", file=sys.stderr)
+        return 1
+
+    if args.build:
+        if not args.allowlist:
+            print("エラー: --build には --allowlist が必須です（公開してよい成果物の明示。デフォルト非公開）。", file=sys.stderr)
+            return 1
+        allowlist = Path(args.allowlist)
+        if not allowlist.is_file():
+            print(f"エラー: allowlist が見つかりません: {allowlist}", file=sys.stderr)
+            return 1
+        return build_site(root, Path(args.out), allowlist)
+
+    serve(root, args.host, args.port)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

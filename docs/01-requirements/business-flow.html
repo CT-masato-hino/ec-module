@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<!--
+  正本は docs/01-requirements/business-flow.md（Mermaid 3図）。
+  本ファイルは人間承認用の一方向生成ビュー。直接編集せず、正本更新時に再生成する。
+  レイアウト方式: 手配置インラインSVG（スイムレーン・実矢印・凡例）。CDN・Mermaid.js不使用。
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>業務フロー図・DFD・機能関連図（承認ビュー）</title>
+<style>
+  :root {
+    --ink:#37352f; --sub:#787774; --line:rgba(55,53,47,.14); --line-soft:rgba(55,53,47,.08);
+    --bg:#fbfbfa; --card:#fff; --accent:#2383e2;
+    --buyer:#185fac; --buyer-soft:#d9e8f8; --sys:#57564f; --sys-soft:#efefed;
+    --ext:#1c7f4e; --ext-soft:#dbeddb; --admin:#9a6700; --admin-soft:#fbf3db;
+    --shadow:0 1px 2px rgba(15,15,15,.04),0 2px 6px rgba(15,15,15,.04); --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 32px 64px;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.6;font-size:14px}
+  .page{max-width:1240px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 12px;font-weight:700}
+  h2{font-size:16px;font-weight:700;margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line-soft)}
+  .meta{color:var(--sub);font-size:13px;background:var(--card);border:1px solid var(--line-soft);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;margin-bottom:8px}
+  .banner{background:#e7f1fc;border-radius:var(--radius);padding:12px 16px;font-size:13px;margin:14px 0}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  figure{margin:0;background:var(--card);border:1px solid var(--line-soft);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:10px;overflow-x:auto}
+  svg{display:block;width:100%;height:auto;min-width:900px}
+  svg text{font-family:"Inter","Hiragino Sans","Noto Sans JP",sans-serif;fill:var(--ink)}
+  .lane-h{font-size:13px;font-weight:700}
+  .nd{font-size:12.5px}
+  .nds{font-size:11px;fill:var(--sub)}
+  .lbl{font-size:11px;fill:var(--sub);stroke:#fff;stroke-width:4;paint-order:stroke}
+  .note{color:var(--sub);font-size:12px;margin-top:36px;padding-top:14px;border-top:1px solid var(--line-soft)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>業務フロー図・DFD・機能関連図（人間承認用ビュー）</h1>
+<div class="meta">
+  正本: <a href="business-flow.md">docs/01-requirements/business-flow.md</a>（Mermaid 3図）／
+  影響ID: F-01〜F-12（<a href="requirements.md">要件定義書</a>）／ AC-05-1・AC-07-3
+</div>
+<div class="banner">
+  このページはMermaid正本からの<strong>一方向生成ビュー</strong>です。直接編集せず、正本更新時に再生成してください。
+  レビュー観点: 業務の分岐（支払い方法・入金確認・キャンセル）が実運用の意図どおりか。
+</div>
+
+<h2>1. 業務フロー図（スイムレーン: 購入者／ストアシステム／外部サービス／管理者）</h2>
+<figure>
+<svg viewBox="0 0 1180 1010" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#57564f"/></marker>
+    <marker id="ag1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#9b9a97"/></marker>
+  </defs>
+
+  <!-- lanes -->
+  <rect x="20" y="20" width="300" height="970" fill="#fbfbfa" stroke="#e3e2df"/>
+  <rect x="320" y="20" width="320" height="970" fill="#ffffff" stroke="#e3e2df"/>
+  <rect x="640" y="20" width="260" height="970" fill="#fbfbfa" stroke="#e3e2df"/>
+  <rect x="900" y="20" width="260" height="970" fill="#ffffff" stroke="#e3e2df"/>
+  <rect x="20" y="20" width="300" height="34" fill="#d9e8f8"/>
+  <rect x="320" y="20" width="320" height="34" fill="#efefed"/>
+  <rect x="640" y="20" width="260" height="34" fill="#dbeddb"/>
+  <rect x="900" y="20" width="260" height="34" fill="#fbf3db"/>
+  <text class="lane-h" x="170" y="42" text-anchor="middle" fill="#185fac">購入者</text>
+  <text class="lane-h" x="480" y="42" text-anchor="middle" fill="#57564f">ストアシステム</text>
+  <text class="lane-h" x="770" y="42" text-anchor="middle" fill="#1c7f4e">外部サービス</text>
+  <text class="lane-h" x="1030" y="42" text-anchor="middle" fill="#9a6700">管理者</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="915" y="66" width="230" height="52" rx="8" fill="#fff" stroke="#e3e2df"/>
+    <line x1="930" y1="84" x2="965" y2="84" stroke="#57564f" stroke-width="1.4" marker-end="url(#ar1)"/>
+    <text class="nds" x="972" y="88">正常フロー</text>
+    <line x1="930" y1="104" x2="965" y2="104" stroke="#9b9a97" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ag1)"/>
+    <text class="nds" x="972" y="108">例外・モック系</text>
+  </g>
+
+  <!-- nodes: 購入者 -->
+  <g>
+    <rect x="55" y="86" width="230" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="55" y="86" width="4" height="48" fill="#185fac"/>
+    <text class="nd" x="170" y="115" text-anchor="middle">商品閲覧 → カートに追加</text>
+    <rect x="55" y="177" width="230" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="55" y="177" width="4" height="56" fill="#185fac"/>
+    <text class="nd" x="170" y="200" text-anchor="middle">チェックアウト</text>
+    <text class="nds" x="170" y="218" text-anchor="middle">配送先入力・支払い方法選択</text>
+    <rect x="55" y="651" width="230" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="55" y="651" width="4" height="48" fill="#185fac"/>
+    <text class="nd" x="170" y="672" text-anchor="middle">振込を実行</text>
+    <text class="nds" x="170" y="688" text-anchor="middle">（銀行振込時）</text>
+  </g>
+
+  <!-- nodes: システム -->
+  <g>
+    <rect x="365" y="177" width="230" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="365" y="177" width="4" height="56" fill="#57564f"/>
+    <text class="nd" x="480" y="200" text-anchor="middle">金額再計算・在庫検証</text>
+    <text class="nds" x="480" y="218" text-anchor="middle">D1の単価のみ信用（AC-03-1/2）</text>
+    <polygon points="480,276 550,310 480,344 410,310" fill="#fff" stroke="#b9b8b4"/>
+    <text class="nd" x="480" y="315" text-anchor="middle">支払い方法</text>
+    <rect x="365" y="377" width="230" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="365" y="377" width="4" height="56" fill="#57564f"/>
+    <text class="nd" x="480" y="400" text-anchor="middle">決済画面へ</text>
+    <text class="nds" x="480" y="418" text-anchor="middle">ダミーキー時はモック決済画面</text>
+    <rect x="365" y="467" width="230" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="365" y="467" width="4" height="56" fill="#57564f"/>
+    <text class="nd" x="480" y="490" text-anchor="middle">Webhook処理</text>
+    <text class="nds" x="480" y="508" text-anchor="middle">署名検証・イベント冪等（AC-06）</text>
+    <rect x="365" y="562" width="230" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="365" y="562" width="4" height="56" fill="#57564f"/>
+    <text class="nd" x="480" y="585" text-anchor="middle">注文作成（冪等・在庫減算）</text>
+    <text class="nds" x="480" y="603" text-anchor="middle">＋注文確認メール（AC-07-1）</text>
+    <rect x="365" y="741" width="230" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="365" y="741" width="4" height="48" fill="#57564f"/>
+    <text class="nd" x="480" y="770" text-anchor="middle">入金確認メール送信</text>
+    <rect x="365" y="831" width="230" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="365" y="831" width="4" height="48" fill="#57564f"/>
+    <text class="nd" x="480" y="860" text-anchor="middle">発送通知メール送信</text>
+    <rect x="365" y="921" width="230" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="365" y="921" width="4" height="56" fill="#57564f"/>
+    <text class="nd" x="480" y="944" text-anchor="middle">在庫を自動復元</text>
+    <text class="nds" x="480" y="962" text-anchor="middle">stock_restoredで二重防止（AC-07-3）</text>
+  </g>
+
+  <!-- nodes: 外部 -->
+  <g>
+    <rect x="655" y="381" width="230" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="655" y="381" width="4" height="48" fill="#1c7f4e"/>
+    <text class="nd" x="770" y="402" text-anchor="middle">Stripe Checkout</text>
+    <text class="nds" x="770" y="418" text-anchor="middle">実キー時のみ</text>
+  </g>
+
+  <!-- nodes: 管理者 -->
+  <g>
+    <rect x="915" y="651" width="230" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="915" y="651" width="4" height="48" fill="#9a6700"/>
+    <text class="nd" x="1030" y="672" text-anchor="middle">入金を確認した</text>
+    <text class="nds" x="1030" y="688" text-anchor="middle">管理画面で手動更新</text>
+    <rect x="915" y="827" width="230" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="915" y="827" width="4" height="56" fill="#9a6700"/>
+    <text class="nd" x="1030" y="850" text-anchor="middle">発送対応</text>
+    <text class="nds" x="1030" y="868" text-anchor="middle">pending→processing→shipped</text>
+    <rect x="915" y="921" width="230" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/><rect x="915" y="921" width="4" height="48" fill="#9a6700"/>
+    <text class="nd" x="1030" y="950" text-anchor="middle">キャンセル／決済失敗</text>
+  </g>
+
+  <!-- arrows -->
+  <g fill="none" stroke="#57564f" stroke-width="1.4">
+    <path d="M170 134 V177" marker-end="url(#ar1)"/>
+    <path d="M285 205 H365" marker-end="url(#ar1)"/>
+    <path d="M480 233 V276" marker-end="url(#ar1)"/>
+    <path d="M480 344 V377" marker-end="url(#ar1)"/>
+    <path d="M550 310 H620 V590 H597" marker-end="url(#ar1)"/>
+    <path d="M595 405 H655" marker-end="url(#ar1)"/>
+    <path d="M770 429 V495 H597" marker-end="url(#ar1)"/>
+    <path d="M480 523 V562" marker-end="url(#ar1)"/>
+    <path d="M365 590 H170 V651" marker-end="url(#ar1)"/>
+    <path d="M285 675 H915" marker-end="url(#ar1)"/>
+    <path d="M975 699 V765 H597" marker-end="url(#ar1)"/>
+    <path d="M1085 699 V827" marker-end="url(#ar1)"/>
+    <path d="M597 605 H700 V855 H915" marker-end="url(#ar1)"/>
+    <path d="M915 855 H597" marker-end="url(#ar1)"/>
+  </g>
+  <g fill="none" stroke="#9b9a97" stroke-width="1.4" stroke-dasharray="5 4">
+    <path d="M400 433 V562" marker-end="url(#ag1)"/>
+    <path d="M915 945 H597" marker-end="url(#ag1)"/>
+  </g>
+
+  <!-- arrow labels -->
+  <text class="lbl" x="492" y="366">カード決済</text>
+  <text class="lbl" x="628" y="470">銀行振込:</text>
+  <text class="lbl" x="628" y="485">画面を挟まず即時注文（unpaid）</text>
+  <text class="lbl" x="600" y="398">実キー時</text>
+  <text class="lbl" x="782" y="452">イベント配送</text>
+  <text class="lbl" x="310" y="510">モック決済確定</text>
+  <text class="lbl" x="185" y="630">振込先案内メール（振込時）</text>
+  <text class="lbl" x="530" y="668">銀行振込の入金</text>
+  <text class="lbl" x="700" y="758">入金済みに更新</text>
+  <text class="lbl" x="710" y="648">入金確認後 発送へ（カードは即）</text>
+  <text class="lbl" x="700" y="848">発送済みに更新</text>
+  <text class="lbl" x="680" y="938">在庫を戻す</text>
+</svg>
+</figure>
+
+<h2>2. DFD（データフロー図）</h2>
+<figure>
+<svg viewBox="0 0 1240 790" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#57564f"/></marker>
+    <marker id="ag2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#9b9a97"/></marker>
+  </defs>
+
+  <!-- external entities -->
+  <rect x="35" y="98" width="150" height="44" rx="22" fill="#d9e8f8" stroke="#185fac"/>
+  <text class="nd" x="110" y="125" text-anchor="middle" fill="#185fac" font-weight="700">購入者</text>
+  <rect x="35" y="458" width="150" height="44" rx="22" fill="#fbf3db" stroke="#9a6700"/>
+  <text class="nd" x="110" y="485" text-anchor="middle" fill="#9a6700" font-weight="700">管理者</text>
+  <rect x="1045" y="158" width="150" height="44" rx="22" fill="#dbeddb" stroke="#1c7f4e"/>
+  <text class="nd" x="1120" y="185" text-anchor="middle" fill="#1c7f4e" font-weight="700">Stripe</text>
+  <rect x="1045" y="538" width="150" height="44" rx="22" fill="#dbeddb" stroke="#1c7f4e"/>
+  <text class="nd" x="1120" y="565" text-anchor="middle" fill="#1c7f4e" font-weight="700">Resend</text>
+
+  <!-- processes -->
+  <g>
+    <rect x="340" y="92" width="220" height="56" rx="14" fill="#fff" stroke="#57564f" stroke-width="1.4"/>
+    <text class="nd" x="450" y="114" text-anchor="middle" font-weight="700">P1 チェックアウト処理</text>
+    <text class="nds" x="450" y="132" text-anchor="middle">金額再計算・在庫検証</text>
+    <rect x="710" y="152" width="220" height="56" rx="14" fill="#fff" stroke="#57564f" stroke-width="1.4"/>
+    <text class="nd" x="820" y="174" text-anchor="middle" font-weight="700">P3 Webhook処理</text>
+    <text class="nds" x="820" y="192" text-anchor="middle">署名検証・状態遷移</text>
+    <rect x="510" y="292" width="220" height="56" rx="14" fill="#fff" stroke="#57564f" stroke-width="1.4"/>
+    <text class="nd" x="620" y="314" text-anchor="middle" font-weight="700">P2 注文作成</text>
+    <text class="nds" x="620" y="332" text-anchor="middle">冪等batch・在庫減算</text>
+    <rect x="220" y="452" width="220" height="56" rx="14" fill="#fff" stroke="#57564f" stroke-width="1.4"/>
+    <text class="nd" x="330" y="474" text-anchor="middle" font-weight="700">P5 注文・商品管理</text>
+    <text class="nds" x="330" y="492" text-anchor="middle">入金確認・発送・キャンセル</text>
+    <rect x="650" y="452" width="220" height="56" rx="14" fill="#fff" stroke="#57564f" stroke-width="1.4"/>
+    <text class="nd" x="760" y="474" text-anchor="middle" font-weight="700">P4 メール送信</text>
+    <text class="nds" x="760" y="492" text-anchor="middle">注文確認・入金・発送</text>
+  </g>
+
+  <!-- data stores -->
+  <g>
+    <g transform="translate(160,668)"><rect x="0" y="0" width="180" height="44" fill="#f3f0fa" stroke="#6b5b95"/><line x1="6" y1="0" x2="6" y2="44" stroke="#6b5b95"/><line x1="174" y1="0" x2="174" y2="44" stroke="#6b5b95"/>
+      <text class="nd" x="90" y="27" text-anchor="middle" fill="#6b5b95">checkout_sessions</text></g>
+    <g transform="translate(380,668)"><rect x="0" y="0" width="180" height="44" fill="#f3f0fa" stroke="#6b5b95"/><line x1="6" y1="0" x2="6" y2="44" stroke="#6b5b95"/><line x1="174" y1="0" x2="174" y2="44" stroke="#6b5b95"/>
+      <text class="nd" x="90" y="27" text-anchor="middle" fill="#6b5b95">products</text></g>
+    <g transform="translate(600,668)"><rect x="0" y="0" width="180" height="44" fill="#f3f0fa" stroke="#6b5b95"/><line x1="6" y1="0" x2="6" y2="44" stroke="#6b5b95"/><line x1="174" y1="0" x2="174" y2="44" stroke="#6b5b95"/>
+      <text class="nd" x="90" y="27" text-anchor="middle" fill="#6b5b95">orders / order_items</text></g>
+    <g transform="translate(820,668)"><rect x="0" y="0" width="180" height="44" fill="#f3f0fa" stroke="#6b5b95"/><line x1="6" y1="0" x2="6" y2="44" stroke="#6b5b95"/><line x1="174" y1="0" x2="174" y2="44" stroke="#6b5b95"/>
+      <text class="nd" x="90" y="27" text-anchor="middle" fill="#6b5b95">webhook_events</text></g>
+    <g transform="translate(1040,668)"><rect x="0" y="0" width="180" height="44" fill="#f3f0fa" stroke="#6b5b95"/><line x1="6" y1="0" x2="6" y2="44" stroke="#6b5b95"/><line x1="174" y1="0" x2="174" y2="44" stroke="#6b5b95"/>
+      <text class="nd" x="90" y="27" text-anchor="middle" fill="#6b5b95">email_logs</text></g>
+  </g>
+
+  <!-- flows -->
+  <g fill="none" stroke="#57564f" stroke-width="1.4">
+    <path d="M185 120 H340" marker-end="url(#ar2)"/>
+    <path d="M410 148 V240 H250 V668" marker-end="url(#ar2)"/>
+    <path d="M470 148 V668" marker-end="url(#ar2)"/>
+    <path d="M560 128 H585 V320 H510" marker-end="url(#ar2)"/>
+    <path d="M1045 180 H930" marker-end="url(#ar2)"/>
+    <path d="M710 195 H620 V292" marker-end="url(#ar2)"/>
+    <path d="M910 208 V668" marker-end="url(#ar2)"/>
+    <path d="M510 335 H490 V668" marker-end="url(#ar2)"/>
+    <path d="M660 348 V668" marker-end="url(#ar2)"/>
+    <path d="M730 340 H745 V452" marker-end="url(#ar2)"/>
+    <path d="M185 480 H220" marker-end="url(#ar2)"/>
+    <path d="M440 496 H620 V668" marker-end="url(#ar2)"/>
+    <path d="M440 470 H650" marker-end="url(#ar2)"/>
+    <path d="M800 508 V600 H1120 V668" marker-end="url(#ar2)"/>
+    <path d="M870 490 H985 V560 H1045" marker-end="url(#ar2)"/>
+  </g>
+  <g fill="none" stroke="#9b9a97" stroke-width="1.4" stroke-dasharray="5 4">
+    <path d="M330 508 V630 H430 V668" marker-end="url(#ag2)"/>
+  </g>
+
+  <!-- flow labels -->
+  <text class="lbl" x="205" y="112">カート＋配送先</text>
+  <text class="lbl" x="258" y="255">セッション保存</text>
+  <text class="lbl" x="478" y="230">単価参照</text>
+  <text class="lbl" x="592" y="168">銀行振込は直接</text>
+  <text class="lbl" x="950" y="172">イベント</text>
+  <text class="lbl" x="636" y="245">completed → 注文作成</text>
+  <text class="lbl" x="918" y="380">冪等記録</text>
+  <text class="lbl" x="404" y="420">ガード付き在庫減算</text>
+  <text class="lbl" x="668" y="420">注文＋明細INSERT</text>
+  <text class="lbl" x="752" y="392">確認メール依頼</text>
+  <text class="lbl" x="190" y="472">操作</text>
+  <text class="lbl" x="500" y="530">状態更新</text>
+  <text class="lbl" x="470" y="462">入金・発送メール依頼</text>
+  <text class="lbl" x="880" y="592">送信記録</text>
+  <text class="lbl" x="920" y="482">実キー時のみ実送信</text>
+  <text class="lbl" x="240" y="622">在庫復元／再減算</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="35" y="200" width="190" height="112" rx="8" fill="#fff" stroke="#e3e2df"/>
+    <rect x="50" y="216" width="34" height="16" rx="8" fill="#d9e8f8" stroke="#185fac"/>
+    <text class="nds" x="94" y="228">外部実体</text>
+    <rect x="50" y="244" width="34" height="16" rx="5" fill="#fff" stroke="#57564f"/>
+    <text class="nds" x="94" y="256">プロセス</text>
+    <g transform="translate(50,272)"><rect width="34" height="16" fill="#f3f0fa" stroke="#6b5b95"/><line x1="3" y1="0" x2="3" y2="16" stroke="#6b5b95"/><line x1="31" y1="0" x2="31" y2="16" stroke="#6b5b95"/></g>
+    <text class="nds" x="94" y="284">データストア</text>
+  </g>
+  <text class="nds" x="35" y="770">※ 会員（users / sessions）は購入フローの必須経路ではないため本DFDでは省略（F-09参照）</text>
+</svg>
+</figure>
+
+<h2>3. 機能関連図</h2>
+<figure>
+<svg viewBox="0 0 1180 660" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#57564f"/></marker>
+    <marker id="ag3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#9b9a97"/></marker>
+  </defs>
+
+  <!-- support lane bg -->
+  <rect x="30" y="30" width="240" height="600" fill="#fbfbfa" stroke="#e3e2df" rx="10"/>
+  <text class="nds" x="150" y="56" text-anchor="middle" font-weight="700">横断・支援機能</text>
+
+  <!-- support nodes -->
+  <rect x="55" y="112" width="190" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="150" y="134" text-anchor="middle" font-weight="700">F-12 運営設定</text>
+  <text class="nds" x="150" y="152" text-anchor="middle">支払い方法・送料・上限</text>
+  <rect x="55" y="272" width="190" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="150" y="294" text-anchor="middle" font-weight="700">F-09 会員</text>
+  <text class="nds" x="150" y="312" text-anchor="middle">任意ログイン（ゲスト購入可）</text>
+  <rect x="55" y="432" width="190" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="150" y="454" text-anchor="middle" font-weight="700">F-11 管理画面</text>
+  <text class="nds" x="150" y="472" text-anchor="middle">商品・注文・入金・発送</text>
+
+  <!-- main chain -->
+  <rect x="385" y="46" width="190" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="480" y="75" text-anchor="middle" font-weight="700">F-01 商品閲覧</text>
+  <rect x="385" y="126" width="190" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="480" y="155" text-anchor="middle" font-weight="700">F-02 カート</text>
+  <rect x="385" y="206" width="190" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="480" y="235" text-anchor="middle" font-weight="700">F-03 チェックアウト</text>
+  <rect x="265" y="306" width="190" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="360" y="335" text-anchor="middle" font-weight="700">F-04 カード決済</text>
+  <rect x="525" y="306" width="190" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="620" y="335" text-anchor="middle" font-weight="700">F-05 銀行振込</text>
+  <rect x="265" y="406" width="190" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="360" y="435" text-anchor="middle" font-weight="700">F-06 Stripe Webhook</text>
+  <rect x="380" y="486" width="240" height="56" rx="8" fill="#fff" stroke="#57564f" stroke-width="1.6"/>
+  <text class="nd" x="500" y="508" text-anchor="middle" font-weight="700">F-07 注文作成・在庫整合</text>
+  <text class="nds" x="500" y="526" text-anchor="middle">冪等・売り越し検知・自動復元</text>
+  <rect x="765" y="486" width="190" height="56" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="860" y="508" text-anchor="middle" font-weight="700">F-08 注文完了・照会</text>
+  <text class="nds" x="860" y="526" text-anchor="middle">完了ページ・非会員照会</text>
+  <rect x="765" y="366" width="190" height="48" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="860" y="395" text-anchor="middle" font-weight="700">F-10 メール通知</text>
+
+  <!-- arrows -->
+  <g fill="none" stroke="#57564f" stroke-width="1.4">
+    <path d="M480 94 V126" marker-end="url(#ar3)"/>
+    <path d="M480 174 V206" marker-end="url(#ar3)"/>
+    <path d="M430 254 V306" marker-end="url(#ar3)"/>
+    <path d="M530 254 V306" marker-end="url(#ar3)"/>
+    <path d="M360 354 V406" marker-end="url(#ar3)"/>
+    <path d="M420 454 V486" marker-end="url(#ar3)"/>
+    <path d="M620 354 V486" marker-end="url(#ar3)"/>
+    <path d="M620 514 H765" marker-end="url(#ar3)"/>
+    <path d="M620 500 H700 V390 H765" marker-end="url(#ar3)"/>
+    <path d="M245 140 H340 V230 H385" marker-end="url(#ar3)"/>
+    <path d="M150 168 V432" marker-end="url(#ar3)"/>
+    <path d="M245 460 H320 V514 H380" marker-end="url(#ar3)"/>
+    <path d="M245 312 H260 V600 H860 V542" marker-end="url(#ar3)"/>
+  </g>
+  <g fill="none" stroke="#9b9a97" stroke-width="1.4" stroke-dasharray="5 4">
+    <path d="M420 354 V376 H468 V486" marker-end="url(#ag3)"/>
+    <path d="M245 288 H350 V242 H385" marker-end="url(#ag3)"/>
+  </g>
+
+  <text class="lbl" x="438" y="284">カード</text>
+  <text class="lbl" x="540" y="284">振込</text>
+  <text class="lbl" x="628" y="440">画面なしで即時注文</text>
+  <text class="lbl" x="640" y="506">完了表示</text>
+  <text class="lbl" x="708" y="468">各種メール</text>
+  <text class="lbl" x="252" y="132">有効な支払い方法・送料</text>
+  <text class="lbl" x="160" y="380">設定の適用先</text>
+  <text class="lbl" x="256" y="452">注文・在庫操作</text>
+  <text class="lbl" x="300" y="594">注文履歴の表示</text>
+  <text class="lbl" x="476" y="430">モック確定</text>
+  <text class="lbl" x="292" y="280">任意ログイン</text>
+</svg>
+</figure>
+
+<div class="note">
+  凡例と配色: 青=購入者 ／ グレー=ストアシステム ／ 緑=外部サービス ／ アンバー=管理者 ／ 紫=データストア。
+  実線=正常フロー、破線=例外・モック系。本ビューはMermaid正本と同じノード・ラベルで構成している（増減なし。DFDのusersのみ省略を明記）。
+</div>
+
+</div>
+</body>
+</html>

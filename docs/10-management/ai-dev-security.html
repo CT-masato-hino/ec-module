@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!--
+  正本は docs/10-management/ai-dev-security.md。本ファイルは人間承認用の一方向生成ビュー。
+  直接編集せず、正本更新時に再生成する。手配置インラインSVG（アクセス範囲・deny遮断線・権限区分）。CDN不使用。
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI駆動開発セキュリティ（承認ビュー）</title>
+<style>
+  :root{--ink:#37352f;--sub:#787774;--line-soft:rgba(55,53,47,.08);--bg:#fbfbfa;--card:#fff;--accent:#2383e2;
+    --shadow:0 1px 2px rgba(15,15,15,.04),0 2px 6px rgba(15,15,15,.04);--radius:10px}
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 32px 64px;background:var(--bg);color:var(--ink);
+    font-family:"Inter","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.6;font-size:14px}
+  .page{max-width:1240px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 12px;font-weight:700}
+  .meta{color:var(--sub);font-size:13px;background:var(--card);border:1px solid var(--line-soft);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 16px;margin-bottom:8px}
+  .banner{background:#e7f1fc;border-radius:var(--radius);padding:12px 16px;font-size:13px;margin:14px 0}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  figure{margin:0;background:var(--card);border:1px solid var(--line-soft);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:10px;overflow-x:auto}
+  svg{display:block;width:100%;height:auto;min-width:900px}
+  svg text{font-family:"Inter","Hiragino Sans","Noto Sans JP",sans-serif;fill:var(--ink)}
+  .zone-h{font-size:13px;font-weight:700}
+  .nd{font-size:12.5px}.nds{font-size:11px;fill:#787774}
+  .lbl{font-size:11px;fill:#787774;stroke:#fff;stroke-width:4;paint-order:stroke}
+  .lblr{font-size:11px;font-weight:700;fill:#b3261e;stroke:#fff;stroke-width:4;paint-order:stroke}
+  .note{color:var(--sub);font-size:12px;margin-top:28px;padding-top:14px;border-top:1px solid var(--line-soft)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>AI駆動開発セキュリティ（人間承認用ビュー）</h1>
+<div class="meta">
+  正本: <a href="ai-dev-security.md">docs/10-management/ai-dev-security.md</a>（権限区分・漏洩リスクと防止策・残リスク受容記録）／
+  ルール正本: ai-security-baseline・.claude/settings.json ／ 用途: 導入判断・リスク受容・関係者説明
+</div>
+<div class="banner">
+  この図が答える問い: <strong>AIは何にアクセスできて（実線）、何が遮断されていて（赤の遮断線）、何は人間にしかできないか（緑）</strong>。
+  前提を隠さない: 会話とリポジトリ内容はLLM APIに送信される — だから「送信されて困るものを環境に置かない」設計にしている。
+</div>
+
+<figure>
+<svg viewBox="0 0 1180 840" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#57564f"/></marker>
+    <marker id="dg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#1c7f4e"/></marker>
+  </defs>
+
+  <!-- dev machine container -->
+  <rect x="40" y="40" width="580" height="540" rx="12" fill="#fff" stroke="#57564f" stroke-width="1.6"/>
+  <text class="zone-h" x="64" y="70">開発マシン（ローカル）</text>
+
+  <rect x="80" y="120" width="220" height="76" rx="10" fill="#e7f1fc" stroke="#2383e2" stroke-width="1.6"/>
+  <text class="nd" x="190" y="152" text-anchor="middle" font-weight="700" fill="#185fac">Claude Code</text>
+  <text class="nds" x="190" y="172" text-anchor="middle">メイン＋サブエージェント</text>
+
+  <rect x="380" y="104" width="200" height="64" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="480" y="130" text-anchor="middle" font-weight="700">リポジトリ</text>
+  <text class="nds" x="480" y="148" text-anchor="middle">Public前提・ダミー値のみ</text>
+  <rect x="380" y="208" width="200" height="64" rx="8" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="480" y="234" text-anchor="middle" font-weight="700">ローカルD1・devサーバー</text>
+  <text class="nds" x="480" y="252" text-anchor="middle">:8788・モック決済のみ</text>
+  <rect x="380" y="330" width="200" height="64" rx="8" fill="#f3f0fa" stroke="#6b5b95"/>
+  <text class="nd" x="480" y="356" text-anchor="middle" fill="#6b5b95" font-weight="700">.dev.vars（秘密情報）</text>
+  <text class="nds" x="480" y="374" text-anchor="middle">Stripe/Resendキー・gitignore</text>
+
+  <!-- controls box inside dev machine -->
+  <rect x="80" y="430" width="500" height="120" rx="8" fill="#fbfbfa" stroke="#b9b8b4"/>
+  <text class="nd" x="100" y="458" font-weight="700">仕組みによる統制（.claude/settings.json — 共有・変更はレビュー対象）</text>
+  <text class="nds" x="100" y="482">漏洩系deny: .env・.dev.vars・鍵・credentials の読み取り禁止</text>
+  <text class="nds" x="100" y="502">破壊系deny: rm -rf /・force push・git reset --hard origin・DROP/TRUNCATE</text>
+  <text class="nds" x="100" y="522">本番系deny: wrangler --remote・deploy・remote系npmスクリプト ／ 権限バイパス禁止</text>
+
+  <!-- external zone -->
+  <rect x="680" y="40" width="460" height="300" rx="12" fill="#fbfbfa" stroke="#b9b8b4"/>
+  <text class="zone-h" x="704" y="70">外部サービス</text>
+  <rect x="720" y="96" width="380" height="100" rx="10" fill="#fff" stroke="#57564f" stroke-width="1.4"/>
+  <text class="nd" x="910" y="124" text-anchor="middle" font-weight="700">Anthropic API（LLM）</text>
+  <text class="nds" x="910" y="146" text-anchor="middle">プロンプト・コード・会話が送信される（構造的前提）</text>
+  <text class="nds" x="910" y="166" text-anchor="middle">→ 顧客データ・実キーを環境に置かない設計で軽減</text>
+  <rect x="720" y="230" width="380" height="72" rx="10" fill="#fff" stroke="#b9b8b4"/>
+  <text class="nd" x="910" y="258" text-anchor="middle" font-weight="700">GitHub</text>
+  <text class="nds" x="910" y="278" text-anchor="middle">Publicリポ push・issue起票（混入検査＋レビュー前提）</text>
+
+  <!-- unreachable zone (physical) -->
+  <rect x="680" y="380" width="460" height="180" rx="12" fill="#efefed" fill-opacity="0.6" stroke="#9b9a97" stroke-width="1.6" stroke-dasharray="8 5"/>
+  <text class="zone-h" x="704" y="410" fill="#57564f">物理的に到達不能ゾーン（denyと二重の防御）</text>
+  <rect x="700" y="430" width="212" height="106" rx="10" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="806" y="456" text-anchor="middle" font-weight="700">本番D1・Pages・Secrets</text>
+  <text class="nds" x="806" y="478" text-anchor="middle">未作成＝接続先が存在しない</text>
+  <text class="nds" x="806" y="496" text-anchor="middle">（database_idはプレースホルダ）</text>
+  <text class="nds" x="806" y="518" text-anchor="middle">作る時が来ても操作は人間のみ</text>
+  <rect x="928" y="430" width="192" height="106" rx="10" fill="#fff" stroke="#9b9a97" stroke-dasharray="4 3"/>
+  <text class="nd" x="1024" y="456" text-anchor="middle" font-weight="700">Stripe/Resend 実サービス</text>
+  <text class="nds" x="1024" y="478" text-anchor="middle">ダミーキー＝認証不能</text>
+  <text class="nds" x="1024" y="496" text-anchor="middle">（だからモック決済モード</text>
+  <text class="nds" x="1024" y="514" text-anchor="middle">で動いている）</text>
+
+  <!-- data inventory strip -->
+  <rect x="170" y="610" width="970" height="84" rx="10" fill="#fff" stroke="#57564f" stroke-width="1.4"/>
+  <text class="nd" x="190" y="638" font-weight="700">この環境に存在するデータ（漏洩インパクトの棚卸し — 正本§2）</text>
+  <rect x="190" y="650" width="220" height="30" rx="15" fill="#efefed"/>
+  <text class="nds" x="300" y="669" text-anchor="middle">コード・docs: 公開前提（Public）</text>
+  <rect x="426" y="650" width="220" height="30" rx="15" fill="#efefed"/>
+  <text class="nds" x="536" y="669" text-anchor="middle">個人情報: 架空サンプルのみ</text>
+  <rect x="662" y="650" width="220" height="30" rx="15" fill="#efefed"/>
+  <text class="nds" x="772" y="669" text-anchor="middle">APIキー: ダミーのみ・実キーなし</text>
+  <text class="nd" x="900" y="669" font-weight="700" fill="#1c7f4e">= 漏れて困るものを置かない</text>
+
+  <!-- human -->
+  <rect x="200" y="740" width="220" height="52" rx="26" fill="#dbeddb" stroke="#1c7f4e" stroke-width="1.6"/>
+  <text class="nd" x="310" y="771" text-anchor="middle" fill="#1c7f4e" font-weight="700">人間（開発責任者）</text>
+  <text class="nds" x="310" y="820" text-anchor="middle">契約・費用・リスク受容・本番適用の最終権限</text>
+
+  <!-- AI allowed flows -->
+  <g fill="none" stroke="#57564f" stroke-width="1.4">
+    <path d="M300 136 H380" marker-end="url(#da)"/>
+    <path d="M300 168 H340 V240 H380" marker-end="url(#da)"/>
+    <path d="M300 152 H330 V80 H650 V128 H720" marker-end="url(#da)"/>
+    <path d="M300 184 H330 V290 H720" marker-end="url(#da)"/>
+  </g>
+  <!-- blocked flows -->
+  <g fill="none" stroke="#b3261e" stroke-width="1.6" stroke-dasharray="6 4">
+    <path d="M260 196 V362 H372"/>
+    <path d="M240 196 V410 H650 V500 H700"/>
+  </g>
+  <g stroke="#b3261e" stroke-width="2">
+    <line x1="352" y1="350" x2="368" y2="374"/><line x1="368" y1="350" x2="352" y2="374"/>
+    <line x1="642" y1="447" x2="658" y2="463"/><line x1="658" y1="447" x2="642" y2="463"/>
+  </g>
+  <!-- human flows -->
+  <g fill="none" stroke="#1c7f4e" stroke-width="1.6">
+    <path d="M420 766 H1160 V470 H1140" marker-end="url(#dg)"/>
+    <path d="M200 766 H100 V520 H80" marker-end="url(#dg)"/>
+  </g>
+
+  <!-- labels -->
+  <text class="lbl" x="310" y="128">読み書き・生成</text>
+  <text class="lbl" x="342" y="200">開発・テスト（ローカル完結）</text>
+  <text class="lbl" x="400" y="72">会話とコンテキスト（常時送信）</text>
+  <text class="lbl" x="480" y="282">push・PR・issue（gh CLI）</text>
+  <text class="lblr" x="268" y="330">deny: 読み取り禁止</text>
+  <text class="lblr" x="300" y="404">deny: wrangler --remote / deploy（方針遮断・二重目）</text>
+  <text class="lbl" x="440" y="758">本番適用・リスク受容・工程ゲート承認（人間のみ・正規権限で）</text>
+  <text class="lbl" x="64" y="710">denyの変更・承認</text>
+</svg>
+</figure>
+
+<div class="note">
+  実線=AIが自律で行う操作 ／ <span style="color:#b3261e;font-weight:700">赤の遮断線（×）=denyで仕組みとして封鎖（方針遮断）</span> ／
+  <strong>グレーゾーン=物理的に到達不能</strong>（接続先が未作成・キーがダミーで認証不能。設定を書き換えても繋がらない — denyと二重） ／
+  緑=人間にしかできない操作。
+  データ資産の棚卸しは正本§2、到達可能性の3分類（到達不能／deny／接続可能）は正本§3、漏洩リスク×防止策は§5、受容記録は§6を参照。
+</div>
+
+</div>
+</body>
+</html>

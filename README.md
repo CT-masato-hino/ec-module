@@ -6,7 +6,7 @@ Cloudflare Pages + Pages Functions + D1 + Stripe Checkout構成のミニECサイ
 
 > AIエージェント(Claude Code等)で開発する場合は [AGENTS.md](AGENTS.md) を参照。設計ルール・既存コーポレートサイトへの組み込みパターン・本番移行チェックリストを記載している。
 >
-> BASE/Shopifyとの費用・機能比較は [docs/COMPARISON.md](docs/COMPARISON.md) を参照。
+> BASE/Shopifyとの費用・機能比較は [docs/01-requirements/COMPARISON.md](docs/01-requirements/COMPARISON.md) を参照。
 
 ## 構成
 
